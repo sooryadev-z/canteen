@@ -230,8 +230,11 @@
         </footer>
     </main>
 
-    <script>
+    <script type="module">
         let allOrders = [];
+        let firebaseConfig = null;
+        let unsubscribeOrders = null;
+        let pollingInterval = null;
 
         // Check user session
         const loggedInUser = JSON.parse(sessionStorage.getItem('user'));
@@ -248,7 +251,7 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Fetch Orders
+        // Fetch Orders (Fallback polling function)
         async function fetchQueue() {
             try {
                 const res = await fetch('/api/orders');
@@ -395,19 +398,85 @@
                     body: JSON.stringify({ status: newStatus })
                 });
                 
-                if (res.ok) {
-                    fetchQueue(); // Reload queue immediately
+                if (res.ok && !unsubscribeOrders) {
+                    fetchQueue(); // Only manually reload if not using real-time Firestore listener
                 }
             } catch (err) {
                 console.error("Failed to update status", err);
             }
         }
 
-        // Poll for updates every 3 seconds to keep kitchen queue real-time!
-        setInterval(fetchQueue, 3000);
+        // Setup real-time listener or fallback
+        async function fetchConfigAndInit() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                firebaseConfig = config.firebaseConfig;
+                await initRealtime();
+            } catch (err) {
+                console.error("Failed to fetch Firebase config, falling back to HTTP polling:", err);
+                startPolling();
+            }
+        }
 
-        // Initial run
-        fetchQueue();
+        async function initRealtime() {
+            if (!firebaseConfig || firebaseConfig.projectId === "YOUR_PROJECT_ID") {
+                console.warn("Firebase is not configured. Falling back to HTTP polling.");
+                startPolling();
+                return;
+            }
+
+            try {
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+                const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                
+                console.log("Firebase initialized successfully. Starting real-time Firestore listener.");
+                const app = initializeApp(firebaseConfig);
+                const db = getFirestore(app);
+                
+                unsubscribeOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
+                    allOrders = [];
+                    snapshot.forEach((doc) => {
+                        allOrders.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    // Sort by created_at ascending
+                    allOrders.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    renderColumns();
+                }, (error) => {
+                    console.error("Firestore onSnapshot error, falling back to HTTP polling:", error);
+                    startPolling();
+                });
+            } catch (err) {
+                console.error("Failed to initialize Firebase SDK, falling back to HTTP polling:", err);
+                startPolling();
+            }
+        }
+
+        function startPolling() {
+            if (pollingInterval) return;
+            fetchQueue();
+            pollingInterval = setInterval(fetchQueue, 3000);
+        }
+
+        // Bind functions to window so they are globally accessible from HTML event handlers
+        window.updateOrderStatus = updateOrderStatus;
+        window.renderColumns = renderColumns;
+
+        // Cleanup listener on unmount / page unload
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribeOrders) {
+                unsubscribeOrders();
+            }
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+        });
+
+        // Initial load
+        fetchConfigAndInit();
     </script>
 </body>
 </html>

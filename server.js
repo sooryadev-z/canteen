@@ -8,6 +8,9 @@ const { GoogleGenAI } = require('@google/generative-ai');
 // Load environment variables
 dotenv.config();
 
+const { db: firestoreDb, isConfigured: isFirebaseConfigured, firebaseConfig } = require('./firebase-config');
+const { doc, setDoc, updateDoc } = require('firebase/firestore');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'db.json');
@@ -35,6 +38,11 @@ async function writeDB(data) {
     console.error("Error writing db.json", error);
   }
 }
+
+// Expose Firebase config
+app.get('/api/config', (req, res) => {
+  res.json({ firebaseConfig });
+});
 
 // ==========================================
 // MENU API ENDPOINTS
@@ -135,6 +143,15 @@ app.post('/api/orders', async (req, res) => {
   });
 
   await writeDB(db);
+
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      await setDoc(doc(firestoreDb, 'orders', String(newOrder.id)), newOrder);
+    } catch (e) {
+      console.error("Failed to save order to Firestore:", e);
+    }
+  }
+
   res.status(201).json(newOrder);
 });
 
@@ -154,6 +171,15 @@ app.put('/api/orders/:id', async (req, res) => {
   };
   db.orders[index] = updatedOrder;
   await writeDB(db);
+
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      await updateDoc(doc(firestoreDb, 'orders', String(id)), { status: req.body.status });
+    } catch (e) {
+      console.error("Failed to update order status in Firestore:", e);
+    }
+  }
+
   res.json(updatedOrder);
 });
 
@@ -398,7 +424,29 @@ app.post('/api/auth/validate-id', async (req, res) => {
   res.json({ valid: true, message: 'Authentication successful' });
 });
 
+// Sync local db.json orders to Firestore if Firestore is active and empty
+async function syncDatabaseToFirestore() {
+  if (!isFirebaseConfigured || !firestoreDb) return;
+  try {
+    const { getDocs, collection } = require('firebase/firestore');
+    const dbData = await readDB();
+    const querySnapshot = await getDocs(collection(firestoreDb, 'orders'));
+    if (querySnapshot.empty && dbData.orders && dbData.orders.length > 0) {
+      console.log(`Syncing ${dbData.orders.length} orders from db.json to Firestore...`);
+      for (const order of dbData.orders) {
+        await setDoc(doc(firestoreDb, 'orders', String(order.id)), order);
+      }
+      console.log("Firestore sync complete.");
+    } else {
+      console.log("Firestore orders collection already has records or db.json has no orders. Skipping sync.");
+    }
+  } catch (err) {
+    console.error("Error syncing db.json to Firestore:", err);
+  }
+}
+
 // Start Server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`CafeGo local server running at http://localhost:${PORT}`);
+  await syncDatabaseToFirestore();
 });
