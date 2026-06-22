@@ -1,0 +1,392 @@
+{
+  "college_ids": [
+    "CS-10245-26",
+    "CS-10246-26",
+    "CS-10247-26",
+    "EC-20412-25",
+    "ME-30154-24",
+    "CE-40112-23",
+    "chef-marcus-26",
+    "admin-alex-26"
+  ],
+  "menu_items": [
+    {
+      "id": 1,
+      "name": "Paneer Butter Masala",
+      "category": "Lunch",
+      "price": 120,
+      "is_veg": true,
+      "is_available": true,
+      "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCQdyLJ7Wk1Fv9too8ddjq0hO0i3P9ScLaP2-dgihNQ0zpDjWDucRbRq6QGHPZAQw_RbI1VRNR8bQz26dXPmWy6AIvcBNXd55crxgs9XkOYDhQicuto4hFZlBrmzuZdrRxTV6oY12zY8SAYUiqMPfknS569tRdrL8lWYEV8uj7GGxFvxdk8lP7aciINoHoAHNlMXovd775e2vJFeo6rJTgMOJ5AzlpOZF527F8uhLYpd0cwpVKSXC2qZpaW5-XFk8tD44sI_7HT_hd6",
+      "prep_time": "12m",
+      "back_time": "",
+      "rating": 1,
+      "orders_count": 146
+    },
+    {
+      "id": 2,
+      "name": "Grilled Chicken Steak",
+      "category": "Lunch",
+      "price": 240,
+      "is_veg": false,
+      "is_available": true,
+      "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuAHzMdRjwI1VmkvGWUJ_NcMzNzkWlK1R8ao_1FkoV1ujktqQEZr8NKVXQVZu57rgHLt2UnybCMI-sMwGgIe1KKeIqynHZoldgszD9MwvPYUdTAT_Oq8PUbeW7w8oRzFTs2WhYnBYTUd1OyPlWAaCnjrbj7fDPytgEzTjJT_3y0nFKtLirKn24Rv1yjM7tvephXft67CKwCSfwxKW5ID5LdMbKdQWJNC9hdZLNhzXc_2cef6zHJqpMIek16iDp3u_gYlCZzU4YRn5YTJ",
+      "prep_time": "20m",
+      "back_time": "",
+      "rating": 4.5,
+      "orders_count": 98
+    },
+    {
+      "id": 3,
+      "name": "Pasta Aglio e Olio",
+      "category": "Snacks",
+      "price": 180,
+      "is_veg": true,
+      "is_available": false,
+      "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuDtR2DDFfWfPf3dXWy8y6G97uhdeYHTcK4_PKEo8ItTmpcvI69IR4if32V2KsfBzdryiN0MtYwfme4M9AoYG8ocNW5H2i3CNCC1GmmS4qrZOM9VCZL6EF3GTfdbB5OCYPV0X-ocoOZREV_fQ_wBZHgv-I7vXC2zBhAPaBHCcdWcTgRvVKAtqTH9twXq0cdTm3qlW4531CZtl0MHVr40Gz2qmTzoXBZjwA-N1efvVJ_RsUZWY7B3OAzfkMaeRTacoKBNu2mlJUp-C48c",
+      "prep_time": "15m",
+      "back_time": "Back at 6 PM",
+      "rating": 4.2,
+      "orders_count": 34
+    },
+    {
+      "id": 4,
+      "name": "Choco Lava Brownie",
+      "category": "Desserts",
+      "price": 95,
+      "is_veg": true,
+      "is_available": true,
+      "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuDZGN9beY5bSN1rF-_-4YNYI-4Tw6sXp5eE83lhZH2ykZebo0xAaq1akR-Oy2P5m6G63v6urtUAyxMJG0irNHZtvfFjDk83AHh4KoQ6Ov7vZuJh5AL0ysgm8jJs9Rom4ruc0owvoSg-QmFBGDUEsNeGRLk-TqsuNmMqMm_TYHa9oGN97HG4SNNBP-l1kbo7LhlXS8nNMCF-PasTd5gEvWwt43QtsXgGQ8MXTHec70FQlwVZY6EKRpGMFmzqoSNqXJHfgnxLD0Cslti2",
+      "prep_time": "5m",
+      "back_time": "",
+      "rating": 4.8,
+      "orders_count": 216
+    },
+    {
+      "id": 5,
+      "name": "Harvest Grain Bowl",
+      "category": "Lunch",
+      "price": 150,
+      "is_veg": true,
+      "is_available": true,
+      "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuDChBDyi8IJurryggoXxXhcdBdU3iCCw5CsjOpFZqD6atlXYjU1LtJetvJJLP0XaDcU9Az41_9QcOMxqXbYIEPosGMnZPTCo54JegwLEp5RKMJ9OhyHlPbqAcvnTjAHn-IFsVXFGVM0TyTSqoSH-TAZ7koSS3ws97Ii1KISrBnULMFecsECiXcKSEmgcE34UqI6NfzFlSlu84GjvbOf3Tst6Czm03Aewtn3HTgJ-J88TDsGqWoOz20IME-pFkjiHFFBm1bK3x9818fc",
+      "prep_time": "10m",
+      "back_time": "",
+      "rating": 4.9,
+      "orders_count": 124
+    },
+    {
+      "id": 6,
+      "name": "Classic Angus Burger",
+      "category": "Snacks",
+      "price": 190,
+      "is_veg": false,
+      "is_available": true,
+      "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuDL9RjBof-qxurym9yeNePjjN1vRBGGYQyIu4yF-lrJ4ni3v_9nMsUeU31FT1FJlCWUuSTBSdrA7uwh5i27TpbBDddrRvoyTkmvjqYzXi__sRh1fe0ydX1wwVFdj6kLzQk5jQlWG02oNIvDUtIjVScHFXdVFexicgAjlCCvVzbzgJfiGTDOKHdnM-P--9wTsA-vjwAqBiz9R7ytd5M11Ttint16g2C7zdD88lTcbdhW2i1oEp0BXSIxzSulFp3plCWrj2hJEfBQ2ns9",
+      "prep_time": "15m",
+      "back_time": "",
+      "rating": 4.1,
+      "orders_count": 158
+    },
+    {
+      "id": 7,
+      "name": "Masala Dosa",
+      "category": "Breakfast",
+      "price": 85,
+      "is_veg": true,
+      "is_available": true,
+      "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCLsuVVcvXJNVOidb75RMmYbcuK3G3UlgFZG2YH47GsxZfsC7i3UopZA_g7NJmPn4cH9GUv3QtHcW9LCZ392-DAsURaQJAzJ0nlhzXaniYytg0oB9Ca2rQP-fWitkzEpRNm9IkBvp0XYgKxrsjZVAvmBH2g314OJqV5dyP218H3w7fXlieDddcvuDnvxRBpEPmOm9tMH6Nkc2pmVScaKqXRM2C44UAKLraOhLCyc5hp9WTdMSsKM9ZbIypsNc1S9sXMUpleKjG_yehz",
+      "prep_time": "8m",
+      "back_time": "",
+      "rating": 4.4,
+      "orders_count": 87
+    },
+    {
+      "id": 8,
+      "name": "Nitro Cold Brew",
+      "category": "Drinks",
+      "price": 110,
+      "is_veg": true,
+      "is_available": true,
+      "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCmyGLuFmhOd-7MYHak9kaE-mC9fB2xw80rcclL17IIH4x7RN85NXJWioGKn5ZmhiGKGWo5pE3lW-4o6AbFQVkHwtEgFc2RtzHOHIz8txGS4g4Q1Uv3jhRNKEZFbpkPlDWnjTdNsTVrLXDgWxeYbNMdWWte2duUcAMbJFDf58lBtwITdIf1qbFayMyX8Ul7L34mowq-icuJyoyNTCTzvQGVO8595tylCD9ji_19fY0GWTn77f8X8PPeevLrYWcuyr-vFvXrJfM9AA9V",
+      "prep_time": "3m",
+      "back_time": "",
+      "rating": 4.8,
+      "orders_count": 189
+    },
+    {
+      "id": 9,
+      "name": "Artisan Avocado Toast",
+      "category": "Breakfast",
+      "price": 140,
+      "is_veg": true,
+      "is_available": true,
+      "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCB80HPCmi_4Ec4mL1_hzRPST7xgy3tGAeIq8EP_KFtZNTCVcfDRp2As-15uzfI5Rmrvj-5RQUndBqG4O9hEzsQmkVEor2WCZZox0gFLWFBpVzm9EpjFLkOkkE9iI6gxwTtCnizTUNL1BtKmH5K1_OIMIlW7qIDNiRPgtzJkTd5OltgTDSZ4BwIqUASTdkLWN0s2EGbpW9d6Z8bX-fce5ONZ5aiMlcQOiX176QGJlwyLHkss-nJTTzX-6oJrVKKCHe7XL6rnyd2YE0k",
+      "prep_time": "7m",
+      "back_time": "",
+      "rating": 4.7,
+      "orders_count": 67
+    }
+  ],
+  "orders": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "total_amount": 120,
+      "pickup_slot": "12:30 - 12:45",
+      "status": "Completed",
+      "token_number": "#SC-402",
+      "items": [
+        {
+          "id": 1,
+          "name": "Paneer Butter Masala",
+          "price": 120,
+          "quantity": 1,
+          "is_veg": true,
+          "customization": "Counter 4 Pickup"
+        }
+      ],
+      "special_instructions": "Make it spicy.",
+      "created_at": "2026-06-22T12:05:00.000Z"
+    },
+    {
+      "id": 2,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "total_amount": 150,
+      "pickup_slot": "13:00 - 13:15",
+      "status": "Completed",
+      "token_number": "#SC-403",
+      "items": [
+        {
+          "id": 5,
+          "name": "Harvest Grain Bowl",
+          "price": 150,
+          "quantity": 1,
+          "is_veg": true,
+          "customization": "Extra Tahini Dressing"
+        }
+      ],
+      "special_instructions": "No cucumber please.",
+      "created_at": "2026-06-22T12:15:00.000Z"
+    },
+    {
+      "id": 3,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "total_amount": 85,
+      "pickup_slot": "10:15 - 10:30",
+      "status": "Completed",
+      "token_number": "#SC-399",
+      "items": [
+        {
+          "id": 7,
+          "name": "Masala Dosa",
+          "price": 85,
+          "quantity": 1,
+          "is_veg": true,
+          "customization": ""
+        }
+      ],
+      "special_instructions": "",
+      "created_at": "2026-06-22T10:02:00.000Z"
+    },
+    {
+      "id": 4,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "total_amount": 120,
+      "pickup_slot": "13:15 - 13:30",
+      "status": "Completed",
+      "token_number": "#SC-390",
+      "items": [
+        {
+          "id": 3,
+          "name": "Pasta Aglio e Olio",
+          "price": 120,
+          "quantity": 1,
+          "is_veg": true,
+          "customization": ""
+        }
+      ],
+      "special_instructions": "",
+      "created_at": "2026-06-22T13:01:00.000Z"
+    },
+    {
+      "id": 5,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "total_amount": 113,
+      "pickup_slot": "12:45 - 13:00",
+      "status": "Completed",
+      "token_number": "#SC-907",
+      "items": [
+        {
+          "id": 1,
+          "name": "Paneer Butter Masala",
+          "price": 120,
+          "is_veg": true,
+          "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCQdyLJ7Wk1Fv9too8ddjq0hO0i3P9ScLaP2-dgihNQ0zpDjWDucRbRq6QGHPZAQw_RbI1VRNR8bQz26dXPmWy6AIvcBNXd55crxgs9XkOYDhQicuto4hFZlBrmzuZdrRxTV6oY12zY8SAYUiqMPfknS569tRdrL8lWYEV8uj7GGxFvxdk8lP7aciINoHoAHNlMXovd775e2vJFeo6rJTgMOJ5AzlpOZF527F8uhLYpd0cwpVKSXC2qZpaW5-XFk8tD44sI_7HT_hd6",
+          "quantity": 1
+        }
+      ],
+      "special_instructions": "",
+      "created_at": "2026-06-22T13:51:13.752Z"
+    },
+    {
+      "id": 6,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "total_amount": 113,
+      "pickup_slot": "13:00 - 13:15",
+      "status": "Completed",
+      "token_number": "#SC-123",
+      "items": [
+        {
+          "id": 1,
+          "name": "Paneer Butter Masala",
+          "price": 120,
+          "is_veg": true,
+          "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCQdyLJ7Wk1Fv9too8ddjq0hO0i3P9ScLaP2-dgihNQ0zpDjWDucRbRq6QGHPZAQw_RbI1VRNR8bQz26dXPmWy6AIvcBNXd55crxgs9XkOYDhQicuto4hFZlBrmzuZdrRxTV6oY12zY8SAYUiqMPfknS569tRdrL8lWYEV8uj7GGxFvxdk8lP7aciINoHoAHNlMXovd775e2vJFeo6rJTgMOJ5AzlpOZF527F8uhLYpd0cwpVKSXC2qZpaW5-XFk8tD44sI_7HT_hd6",
+          "quantity": 1
+        }
+      ],
+      "special_instructions": "extra hot",
+      "created_at": "2026-06-22T14:18:23.415Z"
+    },
+    {
+      "id": 7,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "total_amount": 90.5,
+      "pickup_slot": "13:15 - 13:30",
+      "status": "Completed",
+      "token_number": "#SC-836",
+      "items": [
+        {
+          "id": 4,
+          "name": "Choco Lava Brownie",
+          "price": 95,
+          "is_veg": true,
+          "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuDZGN9beY5bSN1rF-_-4YNYI-4Tw6sXp5eE83lhZH2ykZebo0xAaq1akR-Oy2P5m6G63v6urtUAyxMJG0irNHZtvfFjDk83AHh4KoQ6Ov7vZuJh5AL0ysgm8jJs9Rom4ruc0owvoSg-QmFBGDUEsNeGRLk-TqsuNmMqMm_TYHa9oGN97HG4SNNBP-l1kbo7LhlXS8nNMCF-PasTd5gEvWwt43QtsXgGQ8MXTHec70FQlwVZY6EKRpGMFmzqoSNqXJHfgnxLD0Cslti2",
+          "quantity": 1
+        }
+      ],
+      "special_instructions": "",
+      "created_at": "2026-06-22T14:25:02.523Z"
+    },
+    {
+      "id": 8,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "total_amount": 113,
+      "pickup_slot": "12:30 - 12:45",
+      "status": "Completed",
+      "token_number": "#SC-533",
+      "items": [
+        {
+          "id": 1,
+          "name": "Paneer Butter Masala",
+          "price": 120,
+          "is_veg": true,
+          "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCQdyLJ7Wk1Fv9too8ddjq0hO0i3P9ScLaP2-dgihNQ0zpDjWDucRbRq6QGHPZAQw_RbI1VRNR8bQz26dXPmWy6AIvcBNXd55crxgs9XkOYDhQicuto4hFZlBrmzuZdrRxTV6oY12zY8SAYUiqMPfknS569tRdrL8lWYEV8uj7GGxFvxdk8lP7aciINoHoAHNlMXovd775e2vJFeo6rJTgMOJ5AzlpOZF527F8uhLYpd0cwpVKSXC2qZpaW5-XFk8tD44sI_7HT_hd6",
+          "quantity": 1
+        }
+      ],
+      "special_instructions": "",
+      "created_at": "2026-06-22T14:26:15.272Z"
+    },
+    {
+      "id": 9,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "total_amount": 455,
+      "pickup_slot": "12:45 - 13:00",
+      "status": "Pending",
+      "token_number": "#SC-538",
+      "items": [
+        {
+          "id": 6,
+          "name": "Classic Angus Burger",
+          "price": 190,
+          "is_veg": false,
+          "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuDL9RjBof-qxurym9yeNePjjN1vRBGGYQyIu4yF-lrJ4ni3v_9nMsUeU31FT1FJlCWUuSTBSdrA7uwh5i27TpbBDddrRvoyTkmvjqYzXi__sRh1fe0ydX1wwVFdj6kLzQk5jQlWG02oNIvDUtIjVScHFXdVFexicgAjlCCvVzbzgJfiGTDOKHdnM-P--9wTsA-vjwAqBiz9R7ytd5M11Ttint16g2C7zdD88lTcbdhW2i1oEp0BXSIxzSulFp3plCWrj2hJEfBQ2ns9",
+          "quantity": 2
+        },
+        {
+          "id": 1,
+          "name": "Paneer Butter Masala",
+          "price": 120,
+          "is_veg": true,
+          "image_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuCQdyLJ7Wk1Fv9too8ddjq0hO0i3P9ScLaP2-dgihNQ0zpDjWDucRbRq6QGHPZAQw_RbI1VRNR8bQz26dXPmWy6AIvcBNXd55crxgs9XkOYDhQicuto4hFZlBrmzuZdrRxTV6oY12zY8SAYUiqMPfknS569tRdrL8lWYEV8uj7GGxFvxdk8lP7aciINoHoAHNlMXovd775e2vJFeo6rJTgMOJ5AzlpOZF527F8uhLYpd0cwpVKSXC2qZpaW5-XFk8tD44sI_7HT_hd6",
+          "quantity": 1
+        }
+      ],
+      "special_instructions": "",
+      "created_at": "2026-06-22T14:37:57.036Z"
+    }
+  ],
+  "feedback": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "menu_item_id": 5,
+      "menu_item_name": "Harvest Grain Bowl",
+      "rating": 5,
+      "comments": "Students love the new Grain Bowl dressing, it makes the meal taste super fresh!",
+      "created_at": "2026-06-22T13:20:00.000Z"
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "user_name": "Sarah",
+      "menu_item_id": 6,
+      "menu_item_name": "Classic Angus Burger",
+      "rating": 3,
+      "comments": "The burger patty was delicious but occasionally too salty. Check seasoning.",
+      "created_at": "2026-06-22T13:22:00.000Z"
+    },
+    {
+      "id": 3,
+      "user_id": 3,
+      "user_name": "Rohan",
+      "menu_item_id": 7,
+      "menu_item_name": "Masala Dosa",
+      "rating": 3,
+      "comments": "Masala Dosa was cold by the time I picked it up. Need faster handover.",
+      "created_at": "2026-06-22T13:25:00.000Z"
+    },
+    {
+      "id": 4,
+      "user_id": 4,
+      "user_name": "Neha",
+      "menu_item_id": 8,
+      "menu_item_name": "Nitro Cold Brew",
+      "rating": 5,
+      "comments": "Nitro Cold Brew is standard premium quality! Skip queue is a life saver.",
+      "created_at": "2026-06-22T13:30:00.000Z"
+    },
+    {
+      "id": 5,
+      "user_id": 1,
+      "user_name": "Arjun",
+      "menu_item_id": 1,
+      "menu_item_name": "Paneer Butter Masala",
+      "rating": 1,
+      "comments": "Too Spicy",
+      "created_at": "2026-06-22T14:25:13.949Z"
+    }
+  ],
+  "ai_briefing": [
+    {
+      "date": "2026-06-21",
+      "content": "### Daily Kitchen Briefing (June 21, 2026)\n\n**Positive Highlights:**\n- **Paneer Butter Masala** received positive feedback for creaminess.\n- Dosa has high breakfast volume.\n\n**Critical Alerts:**\n- Students complained that **Choco Lava Brownie** ran out early (before 3:00 PM).\n- **Pasta Aglio e Olio** portion size was reported as small by some students."
+    },
+    {
+      "date": "2026-06-22",
+      "content": "### Daily Kitchen Briefing (June 22, 2026)\n*Generated via CafeGo Local NLP Analyzer*\n\n**👍 Positive Highlights:**\n- Students loved the **Harvest Grain Bowl** (\"Students love the new Grain Bowl dressing, it makes the meal taste super fresh!\")\n- Students loved the **Nitro Cold Brew** (\"Nitro Cold Brew is standard premium quality! Skip queue is a life saver.\")\n\n**⚠️ Critical Alerts:**\n- Seasoning alert: **Classic Angus Burger** was reported as too salty (\"The burger patty was delicious but occasionally too salty. Check seasoning.\")\n- Temperature alert: **Masala Dosa** was cold at pickup (\"Masala Dosa was cold by the time I picked it up. Need faster handover.\")\n- Quality complaint on **Paneer Butter Masala**: \"Too Spicy\"\n\n**🍳 Actionable Cooking Suggestions:**\n- Review the salt ratio in the spice mix for **Classic Angus Burger**.\n- Ensure **Masala Dosa** is stored in warming trays until student pickup time slots."
+    }
+  ]
+}

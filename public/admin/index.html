@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>CafeGo Admin | Operations Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "surface-container-lowest": "#0e0e0e",
+              "on-secondary-fixed-variant": "#5e4100",
+              "surface-container-low": "#1c1b1b",
+              "surface-bright": "#393939",
+              "on-error-container": "#ffdad6",
+              "tertiary-container": "#ff5352",
+              "surface": "#131313",
+              "on-tertiary-container": "#5c0008",
+              "primary-fixed-dim": "#86d7ad",
+              "on-surface-variant": "#bec9c0",
+              "on-surface": "#e5e2e1",
+              "surface-variant": "#353534",
+              "outline-variant": "#3f4943",
+              "on-secondary-container": "#694900",
+              "surface-dim": "#131313",
+              "tertiary-fixed-dim": "#ffb3ae",
+              "primary-fixed": "#a1f4c8",
+              "secondary-container": "#fbb400",
+              "on-primary-container": "#00311e",
+              "surface-container": "#201f1f",
+              "secondary": "#ffd795",
+              "tertiary": "#ffb3ae",
+              "on-primary-fixed-variant": "#005236",
+              "surface-container-highest": "#353534",
+              "inverse-on-surface": "#313030",
+              "on-tertiary-fixed": "#410004",
+              "background": "#131313",
+              "on-tertiary-fixed-variant": "#930014",
+              "on-secondary-fixed": "#271900",
+              "on-error": "#690005",
+              "on-primary": "#003824",
+              "surface-tint": "#86d7ad",
+              "outline": "#89938b",
+              "inverse-primary": "#116c4a",
+              "on-tertiary": "#68000b",
+              "secondary-fixed": "#ffdea9",
+              "primary": "#86d7ad",
+              "secondary-fixed-dim": "#ffba27",
+              "primary-container": "#4fa07a",
+              "on-secondary": "#422c00",
+              "on-primary-fixed": "#002113",
+              "inverse-surface": "#e5e2e1",
+              "on-background": "#e5e2e1",
+              "error": "#ffb4ab",
+              "tertiary-fixed": "#ffdad7",
+              "surface-container-high": "#2a2a2a",
+              "error-container": "#93000a"
+            },
+            "borderRadius": {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "full": "9999px"
+            },
+            "spacing": {
+              "gutter": "16px",
+              "base": "8px",
+              "margin-desktop": "64px",
+              "margin-mobile": "16px",
+              "container-padding": "24px"
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e5e2e1;
+        }
+        .sidebar-active {
+            background: rgba(134, 215, 173, 0.1);
+            color: #86d7ad;
+            border-right: 4px solid #86d7ad;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background">
+    <!-- Sidebar Navigation -->
+    <aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant/10 flex flex-col py-gutter z-50">
+        <div class="px-6 mb-10">
+            <h1 class="text-xl font-bold text-primary">Admin Panel</h1>
+            <p class="text-xs text-on-surface-variant">CafeGo Portal</p>
+        </div>
+        <nav class="flex-1 space-y-1">
+            <button onclick="switchTab('overview')" id="tab-overview" class="w-full flex items-center gap-3 px-6 py-4 sidebar-active transition-colors text-left">
+                <span class="material-symbols-outlined filled-icon">analytics</span>
+                <span>Operations Overview</span>
+            </button>
+            <button onclick="switchTab('menu')" id="tab-menu" class="w-full flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all text-left">
+                <span class="material-symbols-outlined">restaurant_menu</span>
+                <span>Menu Editor</span>
+            </button>
+            <a class="flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all" href="/kitchen/index.html">
+                <span class="material-symbols-outlined">pending_actions</span>
+                <span>Kitchen Live Queue</span>
+            </a>
+            <a class="flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all" href="/">
+                <span class="material-symbols-outlined">logout</span>
+                <span>Log out</span>
+            </a>
+        </nav>
+        <div class="px-6 mt-auto">
+            <div class="flex items-center gap-3 p-3 glass-card rounded-xl">
+                <div class="w-10 h-10 rounded-full overflow-hidden border border-primary/30">
+                    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAROYT6QNY6ighD1L9SHY8PshLtOK_OGYLMJvNM7yF3KvGPpaHOPA8Lc1FbSKzjhLUt0B-KHOxT5mtICVcNgZ-YVr7LUTPNId8JKnmtoqJLBUt-n4NrqFXu9M9SAdo6jb3SHrm9AeZZc2Lxi2OUpS1ShvlJjNCl39CB4yBarqkOkFGCNQEY9lyKCzC6KWmjJWJ_2bNv-s9u8-nh7KOwNOpwhjZRze_YDfSYB9V-4UpB1JP2wBL0YIcGrM370LVaMrL_HeHHtgdaQV-p">
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-on-surface" id="admin-name">Alex Rivera</p>
+                    <p class="text-[9px] uppercase tracking-widest text-primary font-bold">Manager</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Top Header -->
+    <header class="fixed top-0 right-0 w-[calc(100%-16rem)] bg-surface/80 backdrop-blur-xl border-b border-outline-variant/10 h-16 flex justify-between items-center px-margin-desktop z-40">
+        <div class="flex items-center gap-4">
+            <h2 class="text-lg font-bold text-primary" id="header-title">Canteen Dashboard</h2>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="relative group">
+                <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-on-surface-variant text-sm">
+                    <span class="material-symbols-outlined">search</span>
+                </span>
+                <input id="admin-search" oninput="searchItems()" class="bg-surface-container-lowest border-none rounded-full py-2 pl-10 pr-4 w-64 text-xs focus:ring-2 focus:ring-primary/30 transition-all text-on-surface placeholder:text-outline" placeholder="Search menu..." type="text">
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-all">
+                    <span class="material-symbols-outlined">notifications</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Canvas -->
+    <main class="ml-64 pt-24 pb-12 px-margin-desktop min-h-screen">
+        
+        <!-- SECTION: OPERATIONS OVERVIEW -->
+        <div id="section-overview" class="space-y-8">
+            <section class="flex justify-between items-end">
+                <div>
+                    <h3 class="text-2xl font-bold text-on-surface mb-1">Operations Overview</h3>
+                    <p class="text-sm text-on-surface-variant">Real-time performance metrics for <span class="text-primary font-bold">LMCST Canteen</span></p>
+                </div>
+                <div>
+                    <span class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
+                        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span> Live System
+                    </span>
+                </div>
+            </section>
+
+            <!-- Metric Bento Grid -->
+            <section class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Revenue -->
+                <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-primary/10 rounded-xl">
+                            <span class="material-symbols-outlined text-primary">payments</span>
+                        </div>
+                        <span class="text-primary text-xs font-bold">+12.5%</span>
+                    </div>
+                    <p class="text-xs text-on-surface-variant mb-1">Today's Revenue</p>
+                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-revenue">₹0.00</h4>
+                </div>
+                <!-- Orders -->
+                <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-secondary/10 rounded-xl">
+                            <span class="material-symbols-outlined text-secondary">shopping_cart</span>
+                        </div>
+                        <span class="text-secondary text-xs font-bold">+4.2%</span>
+                    </div>
+                    <p class="text-xs text-on-surface-variant mb-1">Total Orders</p>
+                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-orders">0</h4>
+                </div>
+                <!-- Users -->
+                <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-tertiary-container/10 rounded-xl">
+                            <span class="material-symbols-outlined text-tertiary">group</span>
+                        </div>
+                        <span class="text-tertiary text-xs font-bold">+8.7%</span>
+                    </div>
+                    <p class="text-xs text-on-surface-variant mb-1">Active Students</p>
+                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-users">4</h4>
+                </div>
+                <!-- Rating -->
+                <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-primary-container/10 rounded-xl">
+                            <span class="material-symbols-outlined text-primary-fixed">star</span>
+                        </div>
+                        <span class="text-primary-fixed text-xs font-bold">+0.2</span>
+                    </div>
+                    <p class="text-xs text-on-surface-variant mb-1">Avg. Rating</p>
+                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-rating">4.8/5.0</h4>
+                </div>
+            </section>
+
+            <!-- Insights & Top Rated -->
+            <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- AI Insights Card -->
+                <div class="lg:col-span-1">
+                    <div class="glass-card rounded-2xl overflow-hidden h-full flex flex-col">
+                        <div class="p-6 border-b border-outline-variant/10 bg-primary/5 flex items-center gap-3">
+                            <span class="material-symbols-outlined text-primary animate-pulse">auto_awesome</span>
+                            <h5 class="font-bold text-base text-on-surface">AI Daily Insight</h5>
+                        </div>
+                        <div class="p-6 flex-1 flex flex-col justify-between">
+                            <div class="prose prose-invert text-xs text-on-surface-variant leading-relaxed max-h-80 overflow-y-auto pr-1" id="ai-summary-box">
+                                Loading latest Gemini report...
+                            </div>
+                            
+                            <button id="ai-generate-btn" onclick="generateAISummary()" class="w-full mt-4 py-3 bg-primary text-on-primary rounded-xl text-xs font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-xs">sync</span>
+                                Trigger Cutoff AI Summary (4:30 PM)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Rated Items List -->
+                <div class="lg:col-span-2">
+                    <div class="glass-card rounded-2xl p-6 h-full flex flex-col">
+                        <div class="flex justify-between items-center mb-6">
+                            <h5 class="font-bold text-base text-on-surface">Top Rated Items</h5>
+                            <button onclick="switchTab('menu')" class="text-primary text-xs font-bold hover:underline">Manage Menu</button>
+                        </div>
+                        <div id="top-rated-list" class="space-y-4 flex-1 overflow-y-auto max-h-96 pr-1">
+                            <!-- Items populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- SECTION: MENU EDITOR -->
+        <div id="section-menu" class="hidden space-y-6">
+            <section class="flex justify-between items-end">
+                <div>
+                    <h3 class="text-2xl font-bold text-on-surface mb-1">Menu Editor</h3>
+                    <p class="text-sm text-on-surface-variant">Update item availability, pricing, or catalog list.</p>
+                </div>
+                <button onclick="toggleNewItemModal(true)" class="flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-xl text-xs font-bold hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                    <span class="material-symbols-outlined text-[18px]">add</span> Add Item
+                </button>
+            </section>
+
+            <!-- Menu List Grid -->
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container-low border-b border-outline-variant/10 text-xs font-bold text-on-surface-variant uppercase">
+                            <th class="p-4">Item</th>
+                            <th class="p-4">Category</th>
+                            <th class="p-4">Price</th>
+                            <th class="p-4">Diet</th>
+                            <th class="p-4">Stock Status</th>
+                            <th class="p-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menu-table-body" class="divide-y divide-outline-variant/10 text-xs">
+                        <!-- Table items -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MODAL: ADD NEW ITEM -->
+        <div id="modal-new-item" class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-black/60 backdrop-blur-sm p-4">
+            <div class="glass-card w-full max-w-md p-6 rounded-2xl border border-outline-variant/20 shadow-2xl relative">
+                <button onclick="toggleNewItemModal(false)" class="absolute right-4 top-4 text-on-surface-variant hover:text-white">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+                <h3 class="text-base font-bold mb-4 text-primary">Add New Menu Item</h3>
+                
+                <form id="new-item-form" onsubmit="submitNewItem(event)" class="space-y-4 text-xs">
+                    <div>
+                        <label class="block font-bold text-on-surface-variant mb-1">Item Name</label>
+                        <input type="text" id="form-name" required class="w-full bg-surface-container border border-outline-variant/20 rounded-xl p-3 focus:outline-none focus:border-primary text-white"/>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-bold text-on-surface-variant mb-1">Category</label>
+                            <select id="form-category" class="w-full bg-surface-container border border-outline-variant/20 rounded-xl p-3 focus:outline-none focus:border-primary text-white">
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Snacks">Snacks</option>
+                                <option value="Drinks">Drinks</option>
+                                <option value="Desserts">Desserts</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-on-surface-variant mb-1">Price (₹)</label>
+                            <input type="number" id="form-price" step="0.01" required class="w-full bg-surface-container border border-outline-variant/20 rounded-xl p-3 focus:outline-none focus:border-primary text-white"/>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-bold text-on-surface-variant mb-1">Preparation Time</label>
+                            <input type="text" id="form-prep" placeholder="e.g. 10m" class="w-full bg-surface-container border border-outline-variant/20 rounded-xl p-3 focus:outline-none focus:border-primary text-white"/>
+                        </div>
+                        <div class="flex items-center gap-2 mt-5">
+                            <input type="checkbox" id="form-veg" checked class="rounded bg-surface-container border-outline-variant/20 text-primary focus:ring-0"/>
+                            <label for="form-veg" class="font-bold text-on-surface-variant">Vegetarian?</label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-on-surface-variant mb-1">Image URL (Optional)</label>
+                        <input type="text" id="form-image" placeholder="https://images.unsplash.com/..." class="w-full bg-surface-container border border-outline-variant/20 rounded-xl p-3 focus:outline-none focus:border-primary text-white"/>
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 bg-primary text-on-primary rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all">
+                        Save Item
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // State
+        let allMenu = [];
+        let allOrders = [];
+        let allFeedback = [];
+        let currentTab = 'overview';
+
+        // Check login session
+        const loggedInUser = JSON.parse(sessionStorage.getItem('user'));
+        if (loggedInUser && loggedInUser.role === 'admin') {
+            document.getElementById('admin-name').textContent = loggedInUser.name;
+        }
+
+        // Switch Sidebar Tabs
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            document.getElementById('tab-overview').className = "w-full flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all text-left";
+            document.getElementById('tab-menu').className = "w-full flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all text-left";
+            
+            document.getElementById(`tab-${tab}`).className = "w-full flex items-center gap-3 px-6 py-4 sidebar-active transition-colors text-left";
+            
+            if (tab === 'overview') {
+                document.getElementById('section-overview').classList.remove('hidden');
+                document.getElementById('section-menu').classList.add('hidden');
+                document.getElementById('header-title').textContent = 'Canteen Dashboard';
+            } else {
+                document.getElementById('section-overview').classList.add('hidden');
+                document.getElementById('section-menu').classList.remove('hidden');
+                document.getElementById('header-title').textContent = 'Menu Editor';
+            }
+        }
+
+        // Fetch Dashboard Data
+        async function fetchDashboard() {
+            try {
+                // Menu
+                const menuRes = await fetch('/api/menu');
+                allMenu = await menuRes.json();
+
+                // Orders
+                const ordersRes = await fetch('/api/orders');
+                allOrders = await ordersRes.json();
+
+                // Feedback
+                const feedbackRes = await fetch('/api/feedback');
+                allFeedback = await feedbackRes.json();
+
+                renderDashboard();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Calculate and Render Metrics
+        function renderDashboard() {
+            // Revenue (total sum of completed/preparing/ready order totals)
+            const revenue = allOrders.reduce((sum, o) => sum + o.total_amount, 0);
+            document.getElementById('stat-revenue').textContent = `₹${revenue.toFixed(2)}`;
+            
+            // Total Orders count
+            document.getElementById('stat-orders').textContent = allOrders.length;
+            
+            // Avg rating from reviews
+            const avgRating = allFeedback.length > 0
+                ? allFeedback.reduce((sum, f) => sum + f.rating, 0) / allFeedback.length
+                : 4.8;
+            document.getElementById('stat-rating').textContent = `${avgRating.toFixed(1)}/5.0`;
+
+            // Active students (unique users who placed orders)
+            const uniqueStudents = new Set(allOrders.map(o => o.user_id));
+            document.getElementById('stat-users').textContent = Math.max(uniqueStudents.size, 4);
+
+            // Render Top Rated Items (sorted by rating descending)
+            const sortedMenu = [...allMenu].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+            const topRatedList = document.getElementById('top-rated-list');
+            
+            topRatedList.innerHTML = sortedMenu.slice(0, 3).map((item, idx) => {
+                const percentage = Math.min((item.orders_count / 250) * 100, 100);
+                return `
+                    <div class="flex items-center gap-6 p-4 rounded-xl hover:bg-surface-variant/10 transition-all border border-transparent hover:border-outline-variant/20 group">
+                        <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-surface-container">
+                            <img class="w-full h-full object-cover" src="${item.image_url}" alt=""/>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start mb-1">
+                                <h6 class="text-sm font-bold text-on-surface">${item.name}</h6>
+                                <span class="text-primary font-bold text-xs">${item.rating}★</span>
+                            </div>
+                            <p class="text-xs text-on-surface-variant mb-2">${item.orders_count} orders</p>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <p class="text-on-surface font-bold text-sm mb-1">₹${item.price}</p>
+                            <div class="w-24 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                                <div class="h-full bg-primary rounded-full" style="width: ${percentage}%"></div>
+                            </div>
+                            <p class="text-[9px] text-on-surface-variant mt-1">Inventory: ${item.is_available ? 'High' : 'Sold Out'}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Render Menu Editor Table
+            renderMenuTable();
+        }
+
+        // Render Table list inside Menu Editor
+        function renderMenuTable() {
+            const tableBody = document.getElementById('menu-table-body');
+            const searchVal = document.getElementById('admin-search').value.toLowerCase();
+            
+            const filtered = allMenu.filter(item => {
+                return item.name.toLowerCase().includes(searchVal) ||
+                       item.category.toLowerCase().includes(searchVal);
+            });
+
+            tableBody.innerHTML = filtered.map(item => {
+                const dietBadge = item.is_veg 
+                    ? `<span class="bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded text-[10px] font-bold">VEG</span>`
+                    : `<span class="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded text-[10px] font-bold">NON-VEG</span>`;
+
+                const stockToggle = item.is_available
+                    ? `<button onclick="toggleAvailability(${item.id}, false)" class="bg-primary-container text-on-primary-container border border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all hover:brightness-110 active:scale-95">In Stock</button>`
+                    : `<button onclick="toggleAvailability(${item.id}, true)" class="bg-cinnabar-non-veg text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all hover:brightness-110 active:scale-95">Sold Out</button>`;
+
+                return `
+                    <tr class="hover:bg-surface-variant/5">
+                        <td class="p-4 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded overflow-hidden shrink-0 bg-surface-container">
+                                <img src="${item.image_url}" class="w-full h-full object-cover" alt=""/>
+                            </div>
+                            <span class="font-bold text-on-surface">${item.name}</span>
+                        </td>
+                        <td class="p-4 text-on-surface-variant font-semibold">${item.category}</td>
+                        <td class="p-4 text-on-surface font-extrabold">₹${item.price.toFixed(2)}</td>
+                        <td class="p-4">${dietBadge}</td>
+                        <td class="p-4">${stockToggle}</td>
+                        <td class="p-4 text-right space-x-2">
+                            <button onclick="editPrice(${item.id}, ${item.price})" class="text-primary hover:text-white"><span class="material-symbols-outlined text-sm">edit</span></button>
+                            <button onclick="deleteItem(${item.id})" class="text-red-500 hover:text-white"><span class="material-symbols-outlined text-sm">delete</span></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Toggle stock status
+        async function toggleAvailability(id, newStatus) {
+            try {
+                const res = await fetch(`/api/menu/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_available: newStatus })
+                });
+                if (res.ok) {
+                    fetchDashboard();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Modal triggers
+        function toggleNewItemModal(show) {
+            const modal = document.getElementById('modal-new-item');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('new-item-form').reset();
+            }
+        }
+
+        // Submit new item
+        async function submitNewItem(e) {
+            e.preventDefault();
+            
+            const payload = {
+                name: document.getElementById('form-name').value,
+                category: document.getElementById('form-category').value,
+                price: parseFloat(document.getElementById('form-price').value),
+                prep_time: document.getElementById('form-prep').value || '10m',
+                is_veg: document.getElementById('form-veg').checked,
+                image_url: document.getElementById('form-image').value || undefined
+            };
+
+            try {
+                const res = await fetch('/api/menu', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    toggleNewItemModal(false);
+                    fetchDashboard();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Delete menu item
+        async function deleteItem(id) {
+            if (!confirm('Are you sure you want to delete this menu item?')) return;
+            try {
+                const res = await fetch(`/api/menu/${id}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) fetchDashboard();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Edit price trigger
+        async function editPrice(id, currentPrice) {
+            const newPrice = prompt("Enter new price (₹):", currentPrice);
+            if (newPrice === null || isNaN(newPrice) || parseFloat(newPrice) <= 0) return;
+            
+            try {
+                const res = await fetch(`/api/menu/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ price: parseFloat(newPrice) })
+                });
+                if (res.ok) fetchDashboard();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Local search trigger
+        function searchItems() {
+            if (currentTab === 'menu') {
+                renderMenuTable();
+            }
+        }
+
+        // Load AI summary
+        async function loadAISummary() {
+            const container = document.getElementById('ai-summary-box');
+            try {
+                const res = await fetch('/api/insights/summary');
+                const summary = await res.json();
+                
+                // Format content (simple Markdown parsing for UI rendering)
+                const formattedContent = summary.content
+                    .replace(/### (.*)/g, '<h5 class="text-sm font-extrabold mt-4 mb-2 text-white">$1</h5>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-primary">$1</strong>')
+                    .replace(/^- (.*)/gm, '<li class="ml-4 list-disc mb-1">$1</li>')
+                    .replace(/\n/g, '<br>');
+
+                container.innerHTML = `
+                    <p class="text-[10px] text-on-surface-variant font-semibold">Dated: ${summary.date}</p>
+                    <div class="mt-2 text-xs space-y-1">
+                        ${formattedContent}
+                    </div>
+                `;
+            } catch (err) {
+                container.innerHTML = `<span class="text-red-500">Failed to load Gemini reports.</span>`;
+            }
+        }
+
+        // Regenerate AI Summary
+        async function generateAISummary() {
+            const btn = document.getElementById('ai-generate-btn');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="material-symbols-outlined text-xs animate-spin">progress_activity</span> Analyzing Feedback...`;
+            
+            try {
+                const res = await fetch('/api/insights/generate', { method: 'POST' });
+                if (res.ok) {
+                    await loadAISummary();
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span class="material-symbols-outlined text-xs">sync</span> Trigger Cutoff AI Summary (4:30 PM)`;
+            }
+        }
+
+        // Poll summary and statistics
+        setInterval(fetchDashboard, 8000);
+
+        // Init
+        fetchDashboard();
+        loadAISummary();
+    </script>
+</body>
+</html>

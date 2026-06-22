@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>CafeGo Kitchen Queue</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "surface-container-lowest": "#0e0e0e",
+              "on-secondary-fixed-variant": "#5e4100",
+              "surface-container-low": "#1c1b1b",
+              "surface-bright": "#393939",
+              "on-error-container": "#ffdad6",
+              "tertiary-container": "#ff5352",
+              "surface": "#131313",
+              "on-tertiary-container": "#5c0008",
+              "primary-fixed-dim": "#86d7ad",
+              "on-surface-variant": "#bec9c0",
+              "on-surface": "#e5e2e1",
+              "surface-variant": "#353534",
+              "outline-variant": "#3f4943",
+              "on-secondary-container": "#694900",
+              "surface-dim": "#131313",
+              "tertiary-fixed-dim": "#ffb3ae",
+              "primary-fixed": "#a1f4c8",
+              "secondary-container": "#fbb400",
+              "on-primary-container": "#00311e",
+              "surface-container": "#201f1f",
+              "secondary": "#ffd795",
+              "tertiary": "#ffb3ae",
+              "on-primary-fixed-variant": "#005236",
+              "surface-container-highest": "#353534",
+              "inverse-on-surface": "#313030",
+              "on-tertiary-fixed": "#410004",
+              "background": "#131313",
+              "on-tertiary-fixed-variant": "#930014",
+              "on-secondary-fixed": "#271900",
+              "on-error": "#690005",
+              "on-primary": "#003824",
+              "surface-tint": "#86d7ad",
+              "outline": "#89938b",
+              "inverse-primary": "#116c4a",
+              "on-tertiary": "#68000b",
+              "secondary-fixed": "#ffdea9",
+              "primary": "#86d7ad",
+              "secondary-fixed-dim": "#ffba27",
+              "primary-container": "#4fa07a",
+              "on-secondary": "#422c00",
+              "on-primary-fixed": "#002113",
+              "inverse-surface": "#e5e2e1",
+              "on-background": "#e5e2e1",
+              "error": "#ffb4ab",
+              "tertiary-fixed": "#ffdad7",
+              "surface-container-high": "#2a2a2a",
+              "error-container": "#93000a"
+            },
+            "borderRadius": {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "full": "9999px"
+            },
+            "spacing": {
+              "gutter": "16px",
+              "base": "8px",
+              "margin-desktop": "64px",
+              "margin-mobile": "16px",
+              "container-padding": "24px"
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e5e2e1;
+        }
+        .sidebar-active {
+            background: rgba(134, 215, 173, 0.1);
+            color: #86d7ad;
+            border-right: 4px solid #86d7ad;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen selection:bg-primary/30">
+    <!-- Side Navigation -->
+    <aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant/10 flex flex-col py-gutter z-50">
+        <div class="px-6 mb-10">
+            <h1 class="text-xl font-bold text-primary">Kitchen Panel</h1>
+            <p class="text-xs text-on-surface-variant">LMCST Main Canteen</p>
+        </div>
+        <nav class="flex-1 space-y-1">
+            <a class="flex items-center gap-3 px-6 py-4 sidebar-active transition-colors" href="#">
+                <span class="material-symbols-outlined filled-icon" style="font-variation-settings: 'FILL' 1;">pending_actions</span>
+                <span>Live Orders</span>
+            </a>
+            <a class="flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all" href="/admin/index.html">
+                <span class="material-symbols-outlined">analytics</span>
+                <span>Admin View</span>
+            </a>
+            <a class="flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all" href="/">
+                <span class="material-symbols-outlined">logout</span>
+                <span>Exit Portal</span>
+            </a>
+        </nav>
+        <div class="px-6 mt-auto">
+            <div class="flex items-center gap-3 p-3 glass-card rounded-xl">
+                <div class="w-10 h-10 rounded-full overflow-hidden border border-primary/30">
+                    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBckuAmAK6pEX3Inp2HvqBNTkPzn4ZF3z1vxaIL83auPxYiYv7NznliYijQL_fwGvSsAVVe4170pZG5xWP9q6RYrI0sbHX5Ou3n3tWoL0okFjw-Gn-eQglS2xl_LowNCNj7VTrKK1_baJqJrBPwNMzqEmYTi02gdL1ygrhaZnxtwHzgkot1vcBk-gxfydG0dZQOOqByyWaDurIzAybk_FLWVMMIiUF6S9bOYkQZA-Z7vCEtwkksd4Zks4O1ERZWsWCIvLyuXHEXnJE_">
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-on-surface" id="staff-name">Marcus Chen</p>
+                    <p class="text-[9px] uppercase tracking-widest text-primary font-bold">Shift Lead</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="ml-64 flex-1 relative z-10 flex flex-col min-h-screen">
+        <!-- Top Nav Bar -->
+        <header class="fixed top-0 right-0 w-[calc(100%-16rem)] bg-surface-container-low/80 backdrop-blur-xl border-b border-outline-variant/10 h-16 flex justify-between items-center px-margin-desktop z-40">
+            <div class="flex items-center gap-6">
+                <h2 class="text-lg font-bold text-primary">Kitchen Dashboard</h2>
+                <div class="relative group">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-on-surface-variant">
+                        <span class="material-symbols-outlined text-sm">search</span>
+                    </span>
+                    <input id="search-queue" oninput="renderColumns()" class="bg-surface-container-highest/50 border-none rounded-full pl-10 pr-4 py-1.5 text-xs w-64 focus:ring-2 focus:ring-primary/30 transition-all outline-none" placeholder="Search token or name..." type="text">
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="relative p-2 text-on-surface-variant hover:text-primary transition-all">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-tertiary-container rounded-full animate-pulse"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Live Order Queue Content -->
+        <div class="pt-24 px-margin-desktop pb-16 flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex gap-4">
+                    <div class="glass-card px-4 py-2 rounded-xl flex items-center gap-2 border border-outline-variant/20">
+                        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                        <span class="text-xs font-semibold text-primary" id="active-orders-banner">0 Active Orders</span>
+                    </div>
+                    <div class="glass-card px-4 py-2 rounded-xl flex items-center gap-2 border border-outline-variant/20">
+                        <span class="material-symbols-outlined text-sm text-on-surface-variant">avg_time</span>
+                        <span class="text-xs font-semibold text-on-surface-variant">Avg. 12m Prep</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kanban-style columns -->
+            <div class="flex gap-6 flex-1 overflow-hidden min-h-[500px]">
+                <!-- COLUMN: PENDING -->
+                <div class="flex-1 flex flex-col gap-4 bg-surface-container-low/30 p-4 rounded-2xl border border-outline-variant/10">
+                    <div class="flex items-center justify-between px-2 pb-2 border-b border-outline-variant/10">
+                        <h3 class="font-bold flex items-center gap-2">
+                            Pending <span id="pending-count" class="bg-surface-variant px-2 py-0.5 rounded text-xs text-on-surface-variant">0</span>
+                        </h3>
+                    </div>
+                    <div id="pending-column" class="flex-1 overflow-y-auto space-y-4 pr-1 max-h-[600px]">
+                        <!-- Pending Cards -->
+                    </div>
+                </div>
+
+                <!-- COLUMN: PREPARING -->
+                <div class="flex-1 flex flex-col gap-4 bg-surface-container-low/30 p-4 rounded-2xl border border-outline-variant/10">
+                    <div class="flex items-center justify-between px-2 pb-2 border-b border-outline-variant/10">
+                        <h3 class="font-bold flex items-center gap-2 text-primary">
+                            Preparing <span id="preparing-count" class="bg-primary/20 px-2 py-0.5 rounded text-xs text-primary">0</span>
+                        </h3>
+                    </div>
+                    <div id="preparing-column" class="flex-1 overflow-y-auto space-y-4 pr-1 max-h-[600px]">
+                        <!-- Preparing Cards -->
+                    </div>
+                </div>
+
+                <!-- COLUMN: READY -->
+                <div class="flex-1 flex flex-col gap-4 bg-surface-container-low/30 p-4 rounded-2xl border border-outline-variant/10">
+                    <div class="flex items-center justify-between px-2 pb-2 border-b border-outline-variant/10">
+                        <h3 class="font-bold flex items-center gap-2 text-amber-highlight">
+                            Ready for Pickup <span id="ready-count" class="bg-amber-highlight/10 px-2 py-0.5 rounded text-xs text-amber-highlight">0</span>
+                        </h3>
+                    </div>
+                    <div id="ready-column" class="flex-1 overflow-y-auto space-y-4 pr-1 max-h-[600px]">
+                        <!-- Ready Cards -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Stats Bar -->
+        <footer class="fixed bottom-0 right-0 w-[calc(100%-16rem)] h-12 bg-surface-container-low/90 backdrop-blur-md border-t border-outline-variant/5 px-gutter flex items-center justify-between z-40">
+            <div class="flex items-center gap-8">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-on-surface-variant uppercase tracking-widest">Efficiency</span>
+                    <div class="w-32 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+                        <div class="h-full bg-primary" style="width: 92%"></div>
+                    </div>
+                    <span class="text-xs font-semibold text-primary">92%</span>
+                </div>
+                <div class="h-4 w-[1px] bg-outline-variant/20"></div>
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm text-on-surface-variant">local_fire_department</span>
+                    <span class="text-xs text-on-surface">Peak Traffic Slot: 12:30 PM</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 text-on-surface-variant">
+                <span class="material-symbols-outlined text-[16px]">schedule</span>
+                <span class="text-xs font-semibold" id="live-clock">18:59:23</span>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        let allOrders = [];
+
+        // Check user session
+        const loggedInUser = JSON.parse(sessionStorage.getItem('user'));
+        if (loggedInUser && loggedInUser.role === 'kitchen') {
+            document.getElementById('staff-name').textContent = loggedInUser.name;
+        }
+
+        // Live Clock
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+            document.getElementById('live-clock').textContent = timeStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Fetch Orders
+        async function fetchQueue() {
+            try {
+                const res = await fetch('/api/orders');
+                allOrders = await res.json();
+                renderColumns();
+            } catch (err) {
+                console.error("Failed to fetch kitchen queue", err);
+            }
+        }
+
+        // Render Cards in Respective columns
+        function renderColumns() {
+            const pendingCol = document.getElementById('pending-column');
+            const preparingCol = document.getElementById('preparing-column');
+            const readyCol = document.getElementById('ready-column');
+            const searchVal = document.getElementById('search-queue').value.toLowerCase();
+
+            // Filter active orders (excluding completed)
+            const activeOrders = allOrders.filter(o => o.status !== 'Completed');
+            
+            // Apply search
+            const filteredOrders = activeOrders.filter(o => {
+                return o.token_number.toLowerCase().includes(searchVal) ||
+                       o.user_name.toLowerCase().includes(searchVal) ||
+                       o.items.some(item => item.name.toLowerCase().includes(searchVal));
+            });
+
+            const pendingList = filteredOrders.filter(o => o.status === 'Pending');
+            const preparingList = filteredOrders.filter(o => o.status === 'Preparing');
+            const readyList = filteredOrders.filter(o => o.status === 'Ready');
+
+            // Set counts
+            document.getElementById('pending-count').textContent = pendingList.length;
+            document.getElementById('preparing-count').textContent = preparingList.length;
+            document.getElementById('ready-count').textContent = readyList.length;
+            document.getElementById('active-orders-banner').textContent = `${activeOrders.length} Active Orders`;
+
+            // 1. Render Pending
+            if (pendingList.length === 0) {
+                pendingCol.innerHTML = `<div class="text-xs text-on-surface-variant text-center py-10 opacity-50">No pending orders.</div>`;
+            } else {
+                pendingCol.innerHTML = pendingList.map(o => renderKitchenCard(o, 'Pending')).join('');
+            }
+
+            // 2. Render Preparing
+            if (preparingList.length === 0) {
+                preparingCol.innerHTML = `<div class="text-xs text-on-surface-variant text-center py-10 opacity-50">No meals cooking.</div>`;
+            } else {
+                preparingCol.innerHTML = preparingList.map(o => renderKitchenCard(o, 'Preparing')).join('');
+            }
+
+            // 3. Render Ready
+            if (readyList.length === 0) {
+                readyCol.innerHTML = `<div class="text-xs text-on-surface-variant text-center py-10 opacity-50">No ready pickups.</div>`;
+            } else {
+                readyCol.innerHTML = readyList.map(o => renderKitchenCard(o, 'Ready')).join('');
+            }
+        }
+
+        // Card Helper
+        function renderKitchenCard(order, column) {
+            const itemsHtml = order.items.map(item => {
+                const customization = item.customization ? `<span class="text-amber-highlight text-[10px] block font-semibold">${item.customization}</span>` : '';
+                return `
+                    <div class="flex justify-between items-start text-xs border-b border-outline-variant/10 pb-1">
+                        <div>
+                            <span class="font-bold text-on-surface">${item.quantity}x ${item.name}</span>
+                            ${customization}
+                        </div>
+                        <div class="${item.is_veg ? 'diet-veg' : 'diet-non-veg'} scale-75 shrink-0"></div>
+                    </div>
+                `;
+            }).join('');
+
+            const orderDate = new Date(order.created_at);
+            const timePassed = Math.floor((Date.now() - orderDate) / 60000);
+            
+            let timeStr = `${timePassed}m ago`;
+            let actionBtn = '';
+            let cardBorder = 'border border-outline-variant/20';
+
+            if (column === 'Pending') {
+                actionBtn = `
+                    <button onclick="updateOrderStatus(${order.id}, 'Preparing')" class="w-full py-2 bg-primary-container/20 text-primary border border-primary/30 rounded-lg text-xs font-bold hover:bg-primary-container/30 transition-all flex items-center justify-center gap-1 active:scale-[0.98]">
+                        Start Prep <span class="material-symbols-outlined text-sm">play_arrow</span>
+                    </button>
+                `;
+            } else if (column === 'Preparing') {
+                cardBorder = 'border-l-4 border-primary border-t border-r border-b border-outline-variant/20';
+                actionBtn = `
+                    <button onclick="updateOrderStatus(${order.id}, 'Ready')" class="w-full py-2 bg-primary text-on-primary rounded-lg text-xs font-bold hover:brightness-110 transition-all flex items-center justify-center gap-1 active:scale-[0.98]">
+                        Mark Ready <span class="material-symbols-outlined text-sm">check_circle</span>
+                    </button>
+                `;
+            } else if (column === 'Ready') {
+                cardBorder = 'border-l-4 border-amber-highlight border-t border-r border-b border-outline-variant/20';
+                actionBtn = `
+                    <button onclick="updateOrderStatus(${order.id}, 'Completed')" class="w-full py-2 bg-surface-container-highest text-on-surface rounded-lg text-xs font-bold hover:bg-surface-container-high transition-colors flex items-center justify-center gap-1 active:scale-[0.98]">
+                        Handed Over <span class="material-symbols-outlined text-sm">verified_user</span>
+                    </button>
+                `;
+            }
+
+            const instructionBlock = order.special_instructions 
+                ? `<div class="bg-red-500/10 text-red-400 p-2 rounded text-[10px] font-bold border border-red-500/20">
+                     Note: "${order.special_instructions}"
+                   </div>` 
+                : '';
+
+            return `
+                <div class="glass-card p-4 rounded-xl flex flex-col gap-3 relative overflow-hidden ${cardBorder} animate-fade-in-up">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-sm font-extrabold text-primary">${order.token_number}</span>
+                            <p class="text-[9px] text-on-surface-variant font-semibold uppercase mt-0.5">Slot: ${order.pickup_slot}</p>
+                        </div>
+                        <span class="text-[10px] text-on-surface-variant font-bold">${timeStr}</span>
+                    </div>
+                    
+                    <div class="space-y-2 py-1">
+                        ${itemsHtml}
+                    </div>
+
+                    ${instructionBlock}
+
+                    <div class="flex justify-between items-center text-[10px] text-on-surface-variant">
+                        <span>Ordered by: <strong class="text-on-surface">${order.user_name}</strong></span>
+                        <span>₹${order.total_amount.toFixed(2)}</span>
+                    </div>
+
+                    <div class="mt-2">
+                        ${actionBtn}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Change Status Endpoint Call
+        async function updateOrderStatus(orderId, newStatus) {
+            try {
+                const res = await fetch(`/api/orders/${orderId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (res.ok) {
+                    fetchQueue(); // Reload queue immediately
+                }
+            } catch (err) {
+                console.error("Failed to update status", err);
+            }
+        }
+
+        // Poll for updates every 3 seconds to keep kitchen queue real-time!
+        setInterval(fetchQueue, 3000);
+
+        // Initial run
+        fetchQueue();
+    </script>
+</body>
+</html>

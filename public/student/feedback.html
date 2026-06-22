@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Feedback - CafeGo</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="/css/styles.css" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "on-error": "#ffffff",
+              "tertiary": "#EF4444",
+              "cinnabar-non-veg": "#EF4444",
+              "surface": "#0f172a",
+              "primary": "#10B981",
+              "surface-variant": "#334155",
+              "foodie-green": "#10B981",
+              "tertiary-fixed-dim": "#fca5a5",
+              "inverse-primary": "#34d399",
+              "outline": "#64748b",
+              "tertiary-fixed": "#fee2e2",
+              "surface-tint": "#10B981",
+              "secondary-fixed-dim": "#fed7aa",
+              "surface-container-highest": "#334155",
+              "primary-fixed": "#d1fae5",
+              "on-secondary-container": "#7c2d12",
+              "surface-container": "#1e293b",
+              "surface-container-high": "#334155",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-fixed-variant": "#991b1b",
+              "primary-fixed-dim": "#a7f3d0",
+              "surface-dim": "#0f172a",
+              "primary-container": "#064e3b",
+              "outline-variant": "#475569",
+              "error-container": "#7f1d1d",
+              "on-tertiary-container": "#fee2e2",
+              "on-primary-fixed-variant": "#064e3b",
+              "on-primary-fixed": "#064e3b",
+              "on-secondary-fixed-variant": "#7c2d12",
+              "on-surface": "#f8fafc",
+              "on-error-container": "#fee2e2",
+              "secondary-fixed": "#ffedd5",
+              "surface-bright": "#1e293b",
+              "tertiary-container": "#991b1b",
+              "background": "#090d16",
+              "on-secondary": "#ffffff",
+              "error": "#ef4444",
+              "academic-blue": "#1e3a8a",
+              "on-primary-container": "#a7f3d0",
+              "surface-white": "#1e293b",
+              "inverse-surface": "#f8fafc",
+              "on-tertiary-fixed": "#7f1d1d",
+              "amber-highlight": "#f97316",
+              "on-primary": "#ffffff",
+              "secondary": "#f97316",
+              "surface-container-low": "#0f172a",
+              "on-secondary-fixed": "#7c2d12",
+              "inverse-on-surface": "#0f172a",
+              "on-background": "#f8fafc",
+              "secondary-container": "#ffedd5",
+              "surface-container-lowest": "#020617",
+              "on-surface-variant": "#cbd5e1"
+            },
+            "borderRadius": {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "full": "9999px"
+            },
+            "spacing": {
+              "base": "4px",
+              "margin-desktop": "32px",
+              "margin-mobile": "16px",
+              "card-padding": "12px",
+              "gutter": "16px"
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            transition: all 0.2s ease;
+        }
+        .star-active {
+            font-variation-settings: 'FILL' 1;
+            color: #f97316 !important;
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop {
+            animation: pop 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+    <!-- TopAppBar -->
+    <header class="bg-background/80 backdrop-blur-md border-b border-white/5 fixed top-0 z-50 flex justify-between items-center px-margin-mobile h-16 w-full shadow-sm">
+        <div class="flex items-center gap-3">
+            <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-800 transition-colors active:scale-95 text-primary" onclick="location.href='/student/orders.html'">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h1 class="font-bold text-lg text-primary tracking-tight">Feedback</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="material-symbols-outlined text-primary">notifications</span>
+            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-primary font-bold text-xs border border-primary/20">JD</div>
+        </div>
+    </header>
+
+    <main class="pt-20 px-margin-mobile max-w-lg mx-auto">
+        <!-- Meal Info Card -->
+        <div class="bg-slate-900 rounded-xl p-4 mb-6 flex items-center gap-4 border border-slate-800 mt-4 animate-fade-in-up">
+            <div class="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-slate-800 relative">
+                <img id="meal-img" class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100"/>
+            </div>
+            <div>
+                <span class="text-[9px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full uppercase tracking-wider" id="meal-date">Recent Meal</span>
+                <h2 class="text-sm font-bold text-white mt-1" id="meal-title">Paneer Butter Masala</h2>
+                <p class="text-xs text-slate-400">Canteen Pre-Order Completed</p>
+            </div>
+        </div>
+
+        <!-- Rating Section -->
+        <section class="bg-slate-900 rounded-2xl p-6 mb-6 border border-slate-800 animate-fade-in-up">
+            <div class="text-center mb-6">
+                <h3 class="text-base font-bold text-white mb-1">How was your meal?</h3>
+                <p class="text-xs text-slate-400">Your feedback helps us cook better for you!</p>
+            </div>
+            
+            <div class="flex justify-center gap-2 mb-8" id="star-rating">
+                <button class="star-btn p-1 group" onclick="setRating(1)">
+                    <span class="material-symbols-outlined text-4xl text-slate-600 group-hover:text-amber-highlight transition-colors" data-icon="star">star</span>
+                </button>
+                <button class="star-btn p-1 group" onclick="setRating(2)">
+                    <span class="material-symbols-outlined text-4xl text-slate-600 group-hover:text-amber-highlight transition-colors" data-icon="star">star</span>
+                </button>
+                <button class="star-btn p-1 group" onclick="setRating(3)">
+                    <span class="material-symbols-outlined text-4xl text-slate-600 group-hover:text-amber-highlight transition-colors" data-icon="star">star</span>
+                </button>
+                <button class="star-btn p-1 group" onclick="setRating(4)">
+                    <span class="material-symbols-outlined text-4xl text-slate-600 group-hover:text-amber-highlight transition-colors" data-icon="star">star</span>
+                </button>
+                <button class="star-btn p-1 group" onclick="setRating(5)">
+                    <span class="material-symbols-outlined text-4xl text-slate-600 group-hover:text-amber-highlight transition-colors" data-icon="star">star</span>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <label class="text-xs font-bold text-slate-400 block px-1" for="feedback-text">What could be improved?</label>
+                <textarea class="w-full bg-slate-950 border border-slate-800 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary p-4 text-xs transition-all placeholder:text-slate-600 text-white" id="feedback-text" placeholder="Tell us about the taste, portion size, or spice level..." rows="4"></textarea>
+            </div>
+            
+            <div class="mt-5 flex flex-wrap gap-2">
+                <button class="px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-750 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors" onclick="appendTag('Too Spicy')">Too Spicy</button>
+                <button class="px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-750 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors" onclick="appendTag('Cold Food')">Cold Food</button>
+                <button class="px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-750 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors" onclick="appendTag('Portion Size')">Portion Size</button>
+                <button class="px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-750 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors" onclick="appendTag('Long Wait')">Long Wait</button>
+            </div>
+        </section>
+
+        <!-- Submit Button -->
+        <button class="w-full py-4 bg-primary text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-primary/10 active:scale-95 transition-all flex items-center justify-center gap-2 hover:brightness-110" id="submit-btn" onclick="submitFeedback()">
+            Submit Feedback
+            <span class="material-symbols-outlined text-base font-bold">send</span>
+        </button>
+
+        <!-- Success Toast (Hidden) -->
+        <div class="fixed inset-x-4 bottom-24 bg-primary text-slate-950 p-4 rounded-xl shadow-2xl flex items-center gap-2.5 transform translate-y-32 opacity-0 transition-all duration-500 z-[60]" id="success-toast">
+            <span class="material-symbols-outlined font-bold" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            <span class="text-xs font-bold">Thanks! Your feedback has been sent.</span>
+        </div>
+    </main>
+
+    <!-- BottomNavBar -->
+    <nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-slate-900/90 backdrop-blur-lg border-t border-slate-800/50 shadow-lg rounded-t-xl">
+        <a class="flex flex-col items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-90 duration-150" href="/student/index.html">
+            <span class="material-symbols-outlined">home</span>
+            <span class="text-[9px] font-bold">Home</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-90 duration-150" href="/student/orders.html">
+            <span class="material-symbols-outlined">receipt_long</span>
+            <span class="text-[9px] font-bold">Orders</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-primary rounded-full px-3 py-1 active:scale-90 duration-150" href="#">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">rate_review</span>
+            <span class="text-[9px] font-bold">Feedback</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-90 duration-150" href="/">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="text-[9px] font-bold">Log out</span>
+        </a>
+    </nav>
+
+    <script>
+        let currentRating = 0;
+        
+        const itemId = parseInt(sessionStorage.getItem('rating_item_id')) || 1;
+        const itemName = sessionStorage.getItem('rating_item_name') || 'Paneer Butter Masala';
+        const itemDate = sessionStorage.getItem('rating_item_date') || 'Recent';
+        
+        document.getElementById('meal-title').textContent = itemName;
+        document.getElementById('meal-date').textContent = `${itemDate} meal`;
+        
+        const loggedInUser = JSON.parse(sessionStorage.getItem('user')) || { id: 1, name: 'Arjun' };
+
+        // Fetch image for item
+        async function loadMealImage() {
+            try {
+                const res = await fetch('/api/menu');
+                const menu = await res.json();
+                const item = menu.find(m => m.id === itemId);
+                if (item && item.image_url) {
+                    document.getElementById('meal-img').src = item.image_url;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        loadMealImage();
+
+        function setRating(rating) {
+            currentRating = rating;
+            const stars = document.querySelectorAll('.star-btn span');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('star-active', 'animate-pop');
+                    star.textContent = 'star';
+                    setTimeout(() => star.classList.remove('animate-pop'), 300);
+                } else {
+                    star.classList.remove('star-active');
+                    star.textContent = 'star';
+                }
+            });
+        }
+
+        function appendTag(tag) {
+            const textarea = document.getElementById('feedback-text');
+            if (textarea.value.includes(tag)) return;
+            const prefix = textarea.value.length > 0 ? ', ' : '';
+            textarea.value += prefix + tag;
+            textarea.focus();
+        }
+
+        async function submitFeedback() {
+            if (currentRating === 0) {
+                alert('Please select a star rating first!');
+                return;
+            }
+
+            const btn = document.getElementById('submit-btn');
+            const toast = document.getElementById('success-toast');
+            const commentText = document.getElementById('feedback-text').value;
+            
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">progress_activity</span> Sending...';
+            btn.disabled = true;
+
+            const payload = {
+                user_id: loggedInUser.id,
+                user_name: loggedInUser.name,
+                menu_item_id: itemId,
+                menu_item_name: itemName,
+                rating: currentRating,
+                comments: commentText
+            };
+
+            try {
+                const res = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    btn.innerHTML = 'Feedback Sent!';
+                    btn.classList.replace('bg-primary', 'bg-slate-800');
+                    btn.classList.add('text-slate-455');
+                    
+                    toast.classList.remove('translate-y-32', 'opacity-0');
+                    toast.classList.add('translate-y-0', 'opacity-100');
+
+                    setTimeout(() => {
+                        toast.classList.add('translate-y-32', 'opacity-0');
+                        toast.classList.remove('translate-y-0', 'opacity-100');
+                        window.location.href = '/student/orders.html';
+                    }, 2000);
+                } else {
+                    throw new Error('Failed to submit feedback');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Could not submit feedback, please try again.');
+                btn.disabled = false;
+                btn.innerHTML = 'Submit Feedback <span class="material-symbols-outlined text-base font-bold">send</span>';
+            }
+        }
+
+        setRating(0);
+    </script>
+</body>
+</html>

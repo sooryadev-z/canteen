@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Checkout | CafeGo</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="/css/styles.css" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "on-error": "#ffffff",
+              "tertiary": "#EF4444",
+              "cinnabar-non-veg": "#EF4444",
+              "surface": "#0f172a",
+              "primary": "#10B981",
+              "surface-variant": "#334155",
+              "foodie-green": "#10B981",
+              "tertiary-fixed-dim": "#fca5a5",
+              "inverse-primary": "#34d399",
+              "outline": "#64748b",
+              "tertiary-fixed": "#fee2e2",
+              "surface-tint": "#10B981",
+              "secondary-fixed-dim": "#fed7aa",
+              "surface-container-highest": "#334155",
+              "primary-fixed": "#d1fae5",
+              "on-secondary-container": "#7c2d12",
+              "surface-container": "#1e293b",
+              "surface-container-high": "#334155",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-fixed-variant": "#991b1b",
+              "primary-fixed-dim": "#a7f3d0",
+              "surface-dim": "#0f172a",
+              "primary-container": "#064e3b",
+              "outline-variant": "#475569",
+              "error-container": "#7f1d1d",
+              "on-tertiary-container": "#fee2e2",
+              "on-primary-fixed-variant": "#064e3b",
+              "on-primary-fixed": "#064e3b",
+              "on-secondary-fixed-variant": "#7c2d12",
+              "on-surface": "#f8fafc",
+              "on-error-container": "#fee2e2",
+              "secondary-fixed": "#ffedd5",
+              "surface-bright": "#1e293b",
+              "tertiary-container": "#991b1b",
+              "background": "#090d16",
+              "on-secondary": "#ffffff",
+              "error": "#ef4444",
+              "academic-blue": "#1e3a8a",
+              "on-primary-container": "#a7f3d0",
+              "surface-white": "#1e293b",
+              "inverse-surface": "#f8fafc",
+              "on-tertiary-fixed": "#7f1d1d",
+              "amber-highlight": "#f97316",
+              "on-primary": "#ffffff",
+              "secondary": "#f97316",
+              "surface-container-low": "#0f172a",
+              "on-secondary-fixed": "#7c2d12",
+              "inverse-on-surface": "#0f172a",
+              "on-background": "#f8fafc",
+              "secondary-container": "#ffedd5",
+              "surface-container-lowest": "#020617",
+              "on-surface-variant": "#cbd5e1"
+            },
+            "borderRadius": {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "full": "9999px"
+            },
+            "spacing": {
+              "base": "4px",
+              "margin-desktop": "32px",
+              "margin-mobile": "16px",
+              "card-padding": "12px",
+              "gutter": "16px"
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        .slot-pill input:checked + label {
+            background-color: #10B981 !important;
+            color: #0f172a !important;
+            border-color: #10B981 !important;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background flex flex-col min-h-screen">
+    <!-- TopAppBar -->
+    <header class="flex justify-between items-center px-margin-mobile h-16 w-full fixed top-0 z-50 bg-background/80 backdrop-blur-md border-b border-white/5 shadow-sm">
+        <div class="flex items-center gap-4">
+            <button onclick="location.href='/student/index.html'" class="active:scale-95 transition-transform flex items-center justify-center p-1.5 hover:bg-slate-800 rounded-full">
+                <span class="material-symbols-outlined text-primary">arrow_back</span>
+            </button>
+            <h1 class="font-bold text-lg text-primary">Cart Checkout</h1>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-primary/20">
+            <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3xgqZM4wSW28Q6D_8At9s-7Bpj4vB_l4-4Etj-4v2GvFns9u_5-b-nm9EcFNhT0Cfn5q5Pa1uMtvmZyGRUtb5EXzhLTtpx7fejPSt-GSuKReMxCR1OalEblcRbVBjp8aUqH2xp1pIpbHtpR4hiTVakClNirV4LpG2DogeyMRdtH_2lCXv4J9_BoCLUKGIvyK8MgyGVe1HmJQuS2TNuf9p3mgMzi9AqWBkq0CWZpyIiy318Ptznl0xDgfAbBF4tRnxEXZaP1o3vDjs"/>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow pt-20 pb-36 px-margin-mobile max-w-2xl mx-auto w-full space-y-6">
+        <!-- Cart Items Section -->
+        <section>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">Your Selections</h2>
+            <div id="cart-list" class="space-y-3">
+                <!-- Cart Items generated dynamically -->
+            </div>
+        </section>
+
+        <!-- Pickup Time Slot Picker -->
+        <section>
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">Pickup Time Slot</h2>
+                <span class="text-[9px] px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-full font-bold">MANDATORY</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="slot-pill">
+                    <input checked class="hidden" id="slot1" name="timeslot" type="radio" value="12:30 - 12:45"/>
+                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-700/60 bg-slate-900 cursor-pointer transition-all hover:border-primary text-slate-300" for="slot1">
+                        <span class="text-xs font-bold">12:30 - 12:45</span>
+                        <span class="text-[8px] mt-0.5 opacity-60">Popular</span>
+                    </label>
+                </div>
+                <div class="slot-pill">
+                    <input class="hidden" id="slot2" name="timeslot" type="radio" value="12:45 - 13:00"/>
+                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-700/60 bg-slate-900 cursor-pointer transition-all hover:border-primary text-slate-300" for="slot2">
+                        <span class="text-xs font-bold">12:45 - 13:00</span>
+                        <span class="text-[8px] mt-0.5 opacity-60">8 slots left</span>
+                    </label>
+                </div>
+                <div class="slot-pill">
+                    <input class="hidden" id="slot3" name="timeslot" type="radio" value="13:00 - 13:15"/>
+                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-700/60 bg-slate-900 cursor-pointer transition-all hover:border-primary text-slate-300" for="slot3">
+                        <span class="text-xs font-bold">13:00 - 13:15</span>
+                        <span class="text-[8px] mt-0.5 opacity-60">Wide Open</span>
+                    </label>
+                </div>
+                <div class="slot-pill">
+                    <input class="hidden" id="slot4" name="timeslot" type="radio" value="13:15 - 13:30"/>
+                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-700/60 bg-slate-900 cursor-pointer transition-all hover:border-primary text-slate-300" for="slot4">
+                        <span class="text-xs font-bold">13:15 - 13:30</span>
+                        <span class="text-[8px] mt-0.5 opacity-60">Quiet period</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Order Summary Detail -->
+        <section class="bg-slate-900 rounded-2xl p-5 border border-slate-800 space-y-3.5">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">Price Breakdown</h2>
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs text-slate-300">
+                    <span>Subtotal</span>
+                    <span id="subtotal-val" class="font-semibold">₹0.00</span>
+                </div>
+                <div class="flex justify-between text-xs text-slate-300">
+                    <span>Processing Fee</span>
+                    <span class="font-semibold">₹5.00</span>
+                </div>
+                <div class="flex justify-between text-xs text-primary font-semibold">
+                    <span>Student Discount (10%)</span>
+                    <span id="discount-val">-₹0.00</span>
+                </div>
+                <div class="pt-3 border-t border-slate-850 flex justify-between items-center">
+                    <span class="text-sm font-bold text-white">Total Payable</span>
+                    <span class="text-xl font-extrabold text-secondary" id="total-val">₹0.00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Note to Canteen -->
+        <div>
+            <label class="block text-xs font-semibold mb-2 text-slate-450 uppercase tracking-wider">Special Instructions (Optional)</label>
+            <textarea id="instructions" class="w-full bg-slate-900 border border-slate-700/60 rounded-xl p-4 focus:ring-1 focus:ring-primary focus:border-primary focus:outline-none text-xs min-h-[80px] text-white placeholder:text-slate-600" placeholder="e.g. Please make it extra spicy..."></textarea>
+        </div>
+    </main>
+
+    <!-- Bottom Action Sheet -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-slate-950 border-t border-slate-900 rounded-t-3xl z-40">
+        <div class="max-w-2xl mx-auto space-y-3">
+            <div class="flex items-center justify-between text-slate-450 text-[10px] font-bold px-2">
+                <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-primary scale-75">verified_user</span>
+                    <span>Secure Student Payment</span>
+                </div>
+                <span>Est. Prep: 12 mins</span>
+            </div>
+            <button class="w-full bg-secondary text-white py-4 rounded-xl text-sm font-bold transition-all hover:brightness-110 active:scale-95 shadow-lg shadow-secondary/15 flex items-center justify-center gap-2" id="confirmBtn" onclick="confirmOrder()">
+                Confirm Order
+                <span class="material-symbols-outlined text-sm font-bold">arrow_forward</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        
+        if (cart.length === 0) {
+            window.location.href = '/student/index.html';
+        }
+
+        // Render Cart Items
+        function renderCart() {
+            const container = document.getElementById('cart-list');
+            if (cart.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-slate-400">Your cart is empty.</div>`;
+                updateTotals(0);
+                return;
+            }
+
+            container.innerHTML = cart.map((item, index) => {
+                const dietIndicator = item.is_veg
+                    ? `<div class="flex items-center gap-1 border border-primary/20 px-1.5 py-0.5 rounded bg-green-500/10">
+                        <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                        <span class="text-[8px] font-bold text-primary">VEG</span>
+                       </div>`
+                    : `<div class="flex items-center gap-1 border border-cinnabar-non-veg/20 px-1.5 py-0.5 rounded bg-red-500/10">
+                        <div class="w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-b-[5px] border-b-cinnabar-non-veg"></div>
+                        <span class="text-[8px] font-bold text-cinnabar-non-veg uppercase">Non-Veg</span>
+                       </div>`;
+
+                return `
+                    <div class="bg-slate-900 rounded-xl p-3 flex items-center gap-3 border border-slate-800 transition-all">
+                        <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 relative">
+                            <img class="w-full h-full object-cover" src="${item.image_url}" alt="${item.name}"/>
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <div class="flex justify-between items-start gap-1">
+                                <h3 class="text-xs font-bold text-white truncate pr-1">${item.name}</h3>
+                                ${dietIndicator}
+                            </div>
+                            <div class="flex justify-between items-center mt-3">
+                                <span class="text-xs font-bold text-white">₹${item.price}</span>
+                                <div class="flex items-center gap-2.5 bg-slate-850 border border-slate-850 rounded-lg px-2.5 py-1">
+                                    <button onclick="changeQty(${index}, -1)" class="text-primary hover:text-white font-bold text-xs">-</button>
+                                    <span class="text-xs font-bold text-white">${item.quantity}</span>
+                                    <button onclick="changeQty(${index}, 1)" class="text-primary hover:text-white font-bold text-xs">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Calculate Sum
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            updateTotals(subtotal);
+        }
+
+        function changeQty(index, dir) {
+            cart[index].quantity += dir;
+            if (cart[index].quantity <= 0) {
+                cart.splice(index, 1);
+            }
+            localStorage.setItem('cart', JSON.stringify(cart));
+            if (cart.length === 0) {
+                window.location.href = '/student/index.html';
+            } else {
+                renderCart();
+            }
+        }
+
+        function updateTotals(subtotal) {
+            const discount = subtotal * 0.1;
+            const fee = 5.0;
+            const total = subtotal - discount + fee;
+
+            document.getElementById('subtotal-val').textContent = `₹${subtotal.toFixed(2)}`;
+            document.getElementById('discount-val').textContent = `-₹${discount.toFixed(2)}`;
+            document.getElementById('total-val').textContent = `₹${total.toFixed(2)}`;
+            
+            sessionStorage.setItem('last_order_amount', total.toFixed(2));
+        }
+
+        async function confirmOrder() {
+            const btn = document.getElementById('confirmBtn');
+            btn.disabled = true;
+            btn.innerHTML = `
+                <div class="flex items-center justify-center gap-2">
+                    <svg class="animate-spin h-4.5 w-4.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Processing Order...</span>
+                </div>
+            `;
+
+            const selectedSlot = document.querySelector('input[name="timeslot"]:checked').value;
+            const instructions = document.getElementById('instructions').value;
+            const totalAmount = parseFloat(sessionStorage.getItem('last_order_amount'));
+            
+            const userSession = JSON.parse(sessionStorage.getItem('user')) || { id: 1, name: 'Arjun' };
+
+            const orderPayload = {
+                user_id: userSession.id,
+                user_name: userSession.name,
+                total_amount: totalAmount,
+                pickup_slot: selectedSlot,
+                items: cart,
+                special_instructions: instructions
+            };
+
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderPayload)
+                });
+                
+                if (res.ok) {
+                    btn.classList.replace('bg-secondary', 'bg-primary');
+                    btn.innerHTML = `
+                        <div class="flex items-center justify-center gap-2 text-slate-950">
+                            <span class="material-symbols-outlined font-bold">check_circle</span>
+                            <span>Order Confirmed!</span>
+                        </div>
+                    `;
+                    
+                    localStorage.removeItem('cart');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/student/orders.html';
+                    }, 1200);
+                } else {
+                    throw new Error('Failed to create order');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('There was a problem placing your order. Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = `Confirm Order <span class="material-symbols-outlined font-bold text-sm">arrow_forward</span>`;
+            }
+        }
+
+        renderCart();
+    </script>
+</body>
+</html>

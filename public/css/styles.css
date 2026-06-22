@@ -1,0 +1,110 @@
+/* Custom Global Refinements */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  background-color: #F4F4F4;
+}
+
+html.dark body {
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass-card {
+  background: rgba(30, 30, 30, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Custom Scrollbars */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Active buttons and tabs */
+.role-tab-active {
+  background: rgba(45, 106, 79, 0.15) !important;
+  border-color: #2D6A4F !important;
+  color: #2D6A4F !important;
+}
+
+.dark .role-tab-active {
+  background: rgba(134, 215, 173, 0.15) !important;
+  border-color: #86d7ad !important;
+  color: #86d7ad !important;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes pulseOpacity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.status-pulse {
+  animation: pulseOpacity 2s infinite ease-in-out;
+}
+
+/* Diet Indicators */
+.diet-veg {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #2D6A4F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+}
+.diet-veg::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: #2D6A4F;
+  border-radius: 50%;
+}
+
+.diet-non-veg {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #E63946;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+}
+.diet-non-veg::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 7px solid #E63946;
+}
