@@ -1,11 +1,13 @@
 const admin = require('firebase-admin');
+const firebaseCompat = require('firebase/compat/app');
+require('firebase/compat/firestore');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 
 dotenv.config();
 
-// Client configuration mapping for frontend client SDK
+// Client configuration mapping for frontend client SDK / web compat fallback
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY || "YOUR_API_KEY",
   authDomain: process.env.FIREBASE_AUTH_DOMAIN || "YOUR_AUTH_DOMAIN",
@@ -20,8 +22,9 @@ let db = null;
 let isConfigured = false;
 
 try {
-  // Option 1: Try local serviceAccountKey.json first (development environment)
   const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
+
+  // Option 1: Try local serviceAccountKey.json first (development environment)
   if (fs.existsSync(serviceAccountPath)) {
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
     admin.initializeApp({
@@ -54,20 +57,22 @@ try {
     isConfigured = true;
     console.log("Firebase Admin SDK initialized successfully via individual env vars.");
   }
-  // Option 4: Try Application Default Credentials / Project ID fallback (if running inside GCP environment)
-  else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PROJECT_ID !== "YOUR_PROJECT_ID") {
-    admin.initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID
-    });
-    db = admin.firestore();
+  // Option 4: Web Compat SDK Mode via client credentials (fallback for Local or Vercel with Client Config only)
+  else if (
+    firebaseConfig.projectId && firebaseConfig.projectId !== "YOUR_PROJECT_ID" &&
+    firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY"
+  ) {
+    const app = firebaseCompat.initializeApp(firebaseConfig);
+    db = app.firestore();
+    db.settings({ experimentalAutoDetectLongPolling: true }); // Prevent connection leaks/timeouts on Vercel
     isConfigured = true;
-    console.log("Firebase Admin SDK initialized successfully via project ID fallback.");
+    console.log("Firebase Web Compat SDK initialized successfully on backend (Long Polling active).");
   }
   else {
-    console.warn("Firebase Admin SDK not configured on backend. Falling back to local db.json storage.");
+    console.warn("Firebase not configured on backend. Falling back to local db.json storage.");
   }
 } catch (error) {
-  console.error("Failed to initialize Firebase Admin SDK on backend:", error);
+  console.error("Failed to initialize Firebase on backend:", error);
 }
 
 module.exports = {
