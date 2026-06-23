@@ -1,8 +1,8 @@
 /* Custom Global Refinements */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap');
 
 body {
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Montserrat', sans-serif;
   background-color: #F4F4F4;
 }
 
@@ -31,6 +31,14 @@ html.dark body {
   display: none;
 }
 .hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -77,7 +85,7 @@ html.dark body {
 .diet-veg {
   width: 14px;
   height: 14px;
-  border: 1.5px solid #2D6A4F;
+  border: 1.5px solid #10B981;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -87,14 +95,14 @@ html.dark body {
   content: '';
   width: 6px;
   height: 6px;
-  background: #2D6A4F;
+  background: #10B981;
   border-radius: 50%;
 }
 
 .diet-non-veg {
   width: 14px;
   height: 14px;
-  border: 1.5px solid #E63946;
+  border: 1.5px solid #EF4444;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -106,5 +114,14 @@ html.dark body {
   height: 0;
   border-left: 4px solid transparent;
   border-right: 4px solid transparent;
-  border-bottom: 7px solid #E63946;
+  border-bottom: 7px solid #EF4444;
 }
+
+/* Bento Card and Custom Food Card Transitions */
+.food-card-hover {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.food-card-hover:hover {
+  transform: translateY(-6px);
+}
+

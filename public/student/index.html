@@ -5,7 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>CafeGo - Student Dashboard</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link href="/css/styles.css" rel="stylesheet"/>
     <script id="tailwind-config">
@@ -47,8 +47,6 @@
               "on-error-container": "#fee2e2",
               "secondary-fixed": "#ffedd5",
               "surface-bright": "#1e293b",
-              "tertiary-container": "#991b1b",
-              "background": "#090d16",
               "on-secondary": "#ffffff",
               "error": "#ef4444",
               "academic-blue": "#1e3a8a",
@@ -79,6 +77,9 @@
               "margin-mobile": "16px",
               "card-padding": "12px",
               "gutter": "16px"
+            },
+            "fontFamily": {
+              "sans": ["'Plus Jakarta Sans'", "sans-serif"]
             }
           }
         }
@@ -87,60 +88,6 @@
     <style>
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        
-        /* Glassmorphism overrides for premium feel */
-        .glass-card-dark {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .window-header-drag {
-            cursor: grab;
-        }
-        .window-header-drag:active {
-            cursor: grabbing;
-        }
-
-        /* Responsive adaptation for the window split layout */
-        @media (max-width: 767px) {
-            .window-split-body {
-                flex-direction: column !important;
-                overflow-y: auto !important;
-            }
-            .window-sidebar {
-                width: 100% !important;
-                border-right: none !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-                display: flex !important;
-                flex-direction: row !important;
-                overflow-x: auto !important;
-                padding: 12px !important;
-                gap: 12px !important;
-                flex-shrink: 0 !important;
-            }
-            .window-sidebar button {
-                white-space: nowrap !important;
-                padding: 6px 14px !important;
-                border-radius: 12px !important;
-            }
-            .window-grid-area {
-                flex: 1 !important;
-                padding: 12px !important;
-            }
-            .window-cart-area {
-                width: 100% !important;
-                border-left: none !important;
-                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-                flex-shrink: 0 !important;
-                max-height: 250px !important;
-                padding: 12px !important;
-            }
-            #catalog-resize-handle {
-                display: none !important;
-            }
         }
     </style>
 </head>
@@ -172,16 +119,8 @@
         <!-- Welcome Greeting & Upcoming Pre-order Section -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             <section class="animate-in slide-in-from-bottom duration-500">
-                <h1 class="text-3xl font-extrabold text-white" id="student-greeting">Hello, Arjun</h1>
-                <p class="text-sm text-on-surface-variant mt-1">Experience Campus Dining reimagined. Drag, resize, and order from the floating catalog.</p>
-                
-                <!-- Catalog Launcher Button (shown if catalog closed) -->
-                <div id="catalog-launcher-btn" class="mt-6 hidden">
-                    <button onclick="openCatalog()" class="flex items-center gap-2 bg-gradient-to-r from-primary to-primary-container text-white py-3 px-6 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all">
-                        <span class="material-symbols-outlined">launch</span>
-                        Launch Food Catalog
-                    </button>
-                </div>
+                <h1 class="text-3xl font-extrabold text-white animate-fade-in-up" id="student-greeting">Hello, Arjun</h1>
+                <p class="text-sm text-on-surface-variant mt-1">Experience campus dining reimagined. Order fresh meals below and pick them up instantly.</p>
             </section>
 
             <!-- Upcoming Meal Card (styled premium dark) -->
@@ -208,129 +147,71 @@
             </section>
         </div>
 
-        <!-- THE INTERACTIVE WINDOW-BASED CATALOG OVERLAY -->
-        <div id="catalog-window" class="fixed z-40 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-md transition-all duration-150"
-             style="width: 950px; height: 600px; top: 180px; left: calc(50% - 475px); min-width: 350px; min-height: 300px; max-width: 100vw; max-height: 100vh;">
-            
-            <!-- Window Title Bar & Native controls (macOS styling) -->
-            <div id="catalog-header" class="window-header-drag flex items-center justify-between px-4 py-3 bg-slate-950 border-b border-slate-800 select-none">
-                <div class="flex items-center gap-2">
-                    <!-- Traffic lights -->
-                    <button onclick="closeCatalog()" class="w-3.5 h-3.5 rounded-full bg-red-500/80 hover:bg-red-500 transition-colors flex items-center justify-center text-[9px] text-red-950 font-bold" title="Close">×</button>
-                    <button onclick="minimizeCatalog()" class="w-3.5 h-3.5 rounded-full bg-yellow-500/80 hover:bg-yellow-500 transition-colors flex items-center justify-center text-[9px] text-yellow-950 font-bold" title="Minimize">-</button>
-                    <button onclick="maximizeCatalog()" class="w-3.5 h-3.5 rounded-full bg-green-500/80 hover:bg-green-500 transition-colors flex items-center justify-center text-[9px] text-green-950 font-bold" title="Maximize">+</button>
-                    
-                    <span class="ml-4 text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                        CafeGo Catalog
-                    </span>
+        <!-- MODERN FOOD CATALOG SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 pt-4">
+            <!-- Left Side: Catalog Catalog & Filters (3 columns on desktop) -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Search & Categories Bar -->
+                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-900/40 border border-slate-800/80 p-4 rounded-2xl backdrop-blur-md">
+                    <!-- Search Bar -->
+                    <div class="relative w-full sm:w-72">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">search</span>
+                        <input type="text" id="search-bar" placeholder="Search delicious dishes..." class="w-full bg-slate-950/60 border border-slate-850/40 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                    </div>
+                    <!-- Categories (Scrollable Pills) -->
+                    <div class="flex gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none items-center" id="categories-container">
+                        <button id="cat-All" onclick="selectCategory('All')" class="px-4 py-2 rounded-full bg-emerald-500 text-slate-950 text-xs font-extrabold whitespace-nowrap transition-all shadow-md shadow-emerald-500/10">All Items</button>
+                        <button id="cat-Breakfast" onclick="selectCategory('Breakfast')" class="px-4 py-2 rounded-full bg-slate-800/60 text-slate-400 text-xs font-bold whitespace-nowrap hover:text-white hover:bg-slate-700/85 transition-all">Breakfast</button>
+                        <button id="cat-Lunch" onclick="selectCategory('Lunch')" class="px-4 py-2 rounded-full bg-slate-800/60 text-slate-400 text-xs font-bold whitespace-nowrap hover:text-white hover:bg-slate-700/85 transition-all">Lunch</button>
+                        <button id="cat-Snacks" onclick="selectCategory('Snacks')" class="px-4 py-2 rounded-full bg-slate-800/60 text-slate-400 text-xs font-bold whitespace-nowrap hover:text-white hover:bg-slate-700/85 transition-all">Snacks</button>
+                        <button id="cat-Drinks" onclick="selectCategory('Drinks')" class="px-4 py-2 rounded-full bg-slate-800/60 text-slate-400 text-xs font-bold whitespace-nowrap hover:text-white hover:bg-slate-700/85 transition-all">Drinks</button>
+                        <button id="cat-Desserts" onclick="selectCategory('Desserts')" class="px-4 py-2 rounded-full bg-slate-800/60 text-slate-400 text-xs font-bold whitespace-nowrap hover:text-white hover:bg-slate-700/85 transition-all">Desserts</button>
+                        
+                        <button id="veg-toggle-btn" onclick="toggleVegFilter()" class="p-2 rounded-full bg-slate-800/60 border border-slate-800/80 hover:bg-slate-700 transition-all flex items-center justify-center shrink-0" title="Veg Only">
+                            <div class="diet-veg scale-90"></div>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Catalog Toolbar (Search & Filter) -->
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">search</span>
-                        <input type="text" id="search-bar" placeholder="Search catalog..." class="bg-slate-900 border border-slate-800 rounded-xl py-1 pl-7 pr-3 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-40 transition-all"/>
+                <!-- Catalog Grid -->
+                <div id="menu-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Loading State -->
+                    <div class="col-span-full text-center py-12 text-slate-400 text-xs">
+                        <span class="animate-pulse">Loading CafeGo catalog items...</span>
                     </div>
-                    <button id="veg-toggle-btn" onclick="toggleVegFilter()" class="flex items-center justify-center border border-slate-800 rounded-xl p-1.5 bg-slate-900 hover:bg-slate-800 transition-all" title="Toggle Veg Only">
-                        <div class="diet-veg"></div>
-                    </button>
                 </div>
             </div>
 
-            <!-- Window Split Body Layout -->
-            <div class="window-split-body flex flex-1 overflow-hidden">
-                
-                <!-- 1. Left Sidebar: Categories -->
-                <aside class="window-sidebar w-1/5 bg-slate-950/40 border-r border-slate-800/80 p-4 flex flex-col gap-1.5 overflow-y-auto">
-                    <h3 class="desktop-only text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 px-2">Categories</h3>
-                    
-                    <button id="cat-All" onclick="selectCategory('All')" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-primary text-white text-xs font-bold text-left transition-all">
-                        <span class="material-symbols-outlined text-sm">restaurant_menu</span>
-                        <span>All Items</span>
-                    </button>
-                    
-                    <button id="cat-Breakfast" onclick="selectCategory('Breakfast')" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 text-xs font-semibold text-left transition-all">
-                        <span class="material-symbols-outlined text-sm">bakery_dining</span>
-                        <span>Breakfast</span>
-                    </button>
-                    
-                    <button id="cat-Lunch" onclick="selectCategory('Lunch')" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 text-xs font-semibold text-left transition-all">
-                        <span class="material-symbols-outlined text-sm">lunch_dining</span>
-                        <span>Lunch</span>
-                    </button>
-                    
-                    <button id="cat-Snacks" onclick="selectCategory('Snacks')" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 text-xs font-semibold text-left transition-all">
-                        <span class="material-symbols-outlined text-sm">fastfood</span>
-                        <span>Snacks</span>
-                    </button>
-                    
-                    <button id="cat-Drinks" onclick="selectCategory('Drinks')" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 text-xs font-semibold text-left transition-all">
-                        <span class="material-symbols-outlined text-sm">local_bar</span>
-                        <span>Drinks</span>
-                    </button>
-                    
-                    <button id="cat-Desserts" onclick="selectCategory('Desserts')" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 text-xs font-semibold text-left transition-all">
-                        <span class="material-symbols-outlined text-sm">icecream</span>
-                        <span>Desserts</span>
-                    </button>
-                </aside>
-
-                <!-- 2. Center Content: Food Cards Grid -->
-                <div class="window-grid-area flex-1 p-5 overflow-y-auto bg-slate-900/40">
-                    <div id="menu-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <!-- Loading State -->
-                        <div class="col-span-full text-center py-12 text-slate-400 text-xs">
-                            <span class="animate-pulse">Loading CafeGo catalog items...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. Right Sidebar: Sticky Cart Summary -->
-                <aside class="window-cart-area w-1/4 bg-slate-950/40 border-l border-slate-800/80 p-4 flex flex-col justify-between overflow-y-auto">
+            <!-- Right Side: Sticky Checkout Drawer (1 column on desktop) -->
+            <div class="lg:col-span-1">
+                <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-md sticky top-24 space-y-6 flex flex-col justify-between min-h-[450px]">
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Cart Summary</h3>
-                            <span id="cart-badge-window" class="bg-primary text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded-full">0</span>
+                        <div class="flex items-center justify-between border-b border-slate-800/50 pb-3">
+                            <h3 class="text-xs font-bold text-white uppercase tracking-wider font-sans">Cart Summary</h3>
+                            <span id="cart-badge-window" class="bg-primary text-slate-950 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full font-sans">0</span>
                         </div>
                         
                         <!-- Dynamic list of items -->
-                        <div id="window-cart-items" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                        <div id="window-cart-items" class="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-none">
                             <!-- Populated in JS -->
                         </div>
                     </div>
 
                     <!-- Sticky Bottom Actions -->
-                    <div class="border-t border-slate-800 pt-4 mt-4 space-y-3">
-                        <div class="flex items-center justify-between text-xs font-semibold text-slate-400">
+                    <div class="border-t border-slate-800/50 pt-4 space-y-4">
+                        <div class="flex items-center justify-between text-xs font-semibold text-slate-400 font-sans">
                             <span>Subtotal:</span>
-                            <span id="window-cart-subtotal" class="text-sm font-bold text-white">₹0</span>
+                            <span id="window-cart-subtotal" class="text-base font-extrabold text-white">₹0</span>
                         </div>
-                        <button id="window-checkout-btn" onclick="goToCheckout()" class="w-full flex items-center justify-center gap-2 bg-secondary text-white py-3 px-4 rounded-xl font-bold text-xs hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-secondary/15">
+                        <button id="window-checkout-btn" onclick="goToCheckout()" class="w-full flex items-center justify-center gap-2 bg-secondary text-white py-3.5 px-4 rounded-xl font-bold text-xs hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-secondary/15 font-sans">
                             <span class="material-symbols-outlined text-sm">payment</span>
                             Proceed to Checkout
                         </button>
                     </div>
-                </aside>
-            </div>
-
-            <!-- Resize handle in bottom-right corner -->
-            <div id="catalog-resize-handle" class="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-end justify-end p-0.5 select-none z-50">
-                <svg class="text-slate-600 w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path d="M19 19H5M19 19V5M19 19L5 5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                </div>
             </div>
         </div>
     </main>
-
-    <!-- Minimized Window Dock/Tray (Shown only when catalog window is minimized) -->
-    <div id="minimized-catalog-dock" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 hidden animate-fade-in-up">
-        <button onclick="restoreCatalog()" class="flex items-center gap-3 bg-slate-900 border border-slate-700/80 px-6 py-3 rounded-full text-white shadow-2xl hover:bg-slate-800 transition-all select-none">
-            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-            <span class="text-xs font-bold">CafeGo Catalog (Minimized)</span>
-            <span class="material-symbols-outlined text-xs">launch</span>
-        </button>
-    </div>
 
     <!-- BottomNavBar (Mobile Only Layout) -->
     <nav class="fixed bottom-0 w-full z-30 flex justify-around items-center px-4 py-2.5 bg-slate-900/90 backdrop-blur-lg border-t border-slate-800/50 md:hidden">
@@ -353,168 +234,14 @@
     </nav>
 
     <!-- JavaScript Engine -->
-    <script>
-        // Catalog Core Window Position State
-        const catalogWindow = document.getElementById('catalog-window');
-        const catalogHeader = document.getElementById('catalog-header');
-        const resizeHandle = document.getElementById('catalog-resize-handle');
-
-        let isDragging = false;
-        let isResizing = false;
-        let isMaximized = false;
-        
-        let dragStartX, dragStartY;
-        let windowStartX, windowStartY;
-        let resizeStartX, resizeStartY;
-        let windowStartWidth, windowStartHeight;
-
-        let lastWidth = '950px';
-        let lastHeight = '600px';
-        let lastLeft = 'calc(50% - 475px)';
-        let lastTop = '180px';
-
-        // Catalog Drag and Drop
-        catalogHeader.addEventListener('mousedown', (e) => {
-            if (e.target.closest('button') || e.target.closest('input')) return;
-            if (isMaximized || window.innerWidth < 768) return;
-            isDragging = true;
-            dragStartX = e.clientX;
-            dragStartY = e.clientY;
-            windowStartX = catalogWindow.offsetLeft;
-            windowStartY = catalogWindow.offsetTop;
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('mouseup', stopDrag);
-        });
-
-        function onDrag(e) {
-            if (!isDragging) return;
-            const dx = e.clientX - dragStartX;
-            const dy = e.clientY - dragStartY;
-            catalogWindow.style.left = `${windowStartX + dx}px`;
-            catalogWindow.style.top = `${windowStartY + dy}px`;
-        }
-
-        function stopDrag() {
-            isDragging = false;
-            document.removeEventListener('mousemove', onDrag);
-            document.removeEventListener('mouseup', stopDrag);
-        }
-
-        // Touch Drag for Tablets
-        catalogHeader.addEventListener('touchstart', (e) => {
-            if (e.target.closest('button') || e.target.closest('input')) return;
-            if (isMaximized || window.innerWidth < 768) return;
-            isDragging = true;
-            const touch = e.touches[0];
-            dragStartX = touch.clientX;
-            dragStartY = touch.clientY;
-            windowStartX = catalogWindow.offsetLeft;
-            windowStartY = catalogWindow.offsetTop;
-            document.addEventListener('touchmove', onTouchDrag);
-            document.addEventListener('touchend', stopTouchDrag);
-        });
-
-        function onTouchDrag(e) {
-            if (!isDragging) return;
-            const touch = e.touches[0];
-            const dx = touch.clientX - dragStartX;
-            const dy = touch.clientY - dragStartY;
-            catalogWindow.style.left = `${windowStartX + dx}px`;
-            catalogWindow.style.top = `${windowStartY + dy}px`;
-        }
-
-        function stopTouchDrag() {
-            isDragging = false;
-            document.removeEventListener('touchmove', onTouchDrag);
-            document.removeEventListener('touchend', stopTouchDrag);
-        }
-
-        // Catalog Resize Handlers
-        resizeHandle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            if (isMaximized || window.innerWidth < 768) return;
-            isResizing = true;
-            resizeStartX = e.clientX;
-            resizeStartY = e.clientY;
-            windowStartWidth = catalogWindow.offsetWidth;
-            windowStartHeight = catalogWindow.offsetHeight;
-            document.addEventListener('mousemove', onResize);
-            document.addEventListener('mouseup', stopResize);
-        });
-
-        function onResize(e) {
-            if (!isResizing) return;
-            const dx = e.clientX - resizeStartX;
-            const dy = e.clientY - resizeStartY;
-            const newWidth = Math.max(450, windowStartWidth + dx);
-            const newHeight = Math.max(350, windowStartHeight + dy);
-            catalogWindow.style.width = `${newWidth}px`;
-            catalogWindow.style.height = `${newHeight}px`;
-        }
-
-        function stopResize() {
-            isResizing = false;
-            document.removeEventListener('mousemove', onResize);
-            document.removeEventListener('mouseup', stopResize);
-        }
-
-        // Window Controls Actions
-        function closeCatalog() {
-            catalogWindow.classList.add('hidden');
-            document.getElementById('catalog-launcher-btn').classList.remove('hidden');
-            document.getElementById('minimized-catalog-dock').classList.add('hidden');
-        }
-
-        function openCatalog() {
-            catalogWindow.classList.remove('hidden');
-            document.getElementById('catalog-launcher-btn').classList.add('hidden');
-            document.getElementById('minimized-catalog-dock').classList.add('hidden');
-        }
-
-        function minimizeCatalog() {
-            catalogWindow.classList.add('hidden');
-            document.getElementById('minimized-catalog-dock').classList.remove('hidden');
-        }
-
-        function restoreCatalog() {
-            catalogWindow.classList.remove('hidden');
-            document.getElementById('minimized-catalog-dock').classList.add('hidden');
-        }
-
-        function maximizeCatalog() {
-            if (window.innerWidth < 768) return;
-            if (!isMaximized) {
-                // Save current dimension coordinates
-                lastWidth = catalogWindow.style.width;
-                lastHeight = catalogWindow.style.height;
-                lastLeft = catalogWindow.style.left;
-                lastTop = catalogWindow.style.top;
-
-                // Maximize
-                catalogWindow.style.width = '100vw';
-                catalogWindow.style.height = '100vh';
-                catalogWindow.style.left = '0px';
-                catalogWindow.style.top = '0px';
-                catalogWindow.style.borderRadius = '0px';
-                isMaximized = true;
-            } else {
-                // Restore
-                catalogWindow.style.width = lastWidth;
-                catalogWindow.style.height = lastHeight;
-                catalogWindow.style.left = lastLeft;
-                catalogWindow.style.top = lastTop;
-                catalogWindow.style.borderRadius = '1rem';
-                isMaximized = false;
-            }
-        }
-
-        // ==========================================
-        // CafeGo Menu & Cart Functional Logic
-        // ==========================================
+    <script type="module">
         let allMenuItems = [];
         let activeCategory = 'All';
         let vegFilterActive = false;
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let firebaseConfig = null;
+        let unsubscribeMenu = null;
+        let pollingInterval = null;
 
         // Check session user
         const loggedInUser = JSON.parse(sessionStorage.getItem('user'));
@@ -522,7 +249,7 @@
             document.getElementById('student-greeting').textContent = `Hello, ${loggedInUser.name}`;
         }
 
-        // Fetch menu list
+        // Fetch menu list fallback
         async function fetchMenu() {
             try {
                 const res = await fetch('/api/menu');
@@ -538,10 +265,16 @@
             }
         }
 
+        function isSpicy(item) {
+            const name = item.name.toLowerCase();
+            return name.includes('masala') || name.includes('spicy') || name.includes('chilli') || name.includes('dosa') || name.includes('jalapeno') || name.includes('hot');
+        }
+
         // Render food cards inside catalog grid
         function renderMenu() {
             const container = document.getElementById('menu-container');
-            const searchVal = document.getElementById('search-bar').value.toLowerCase();
+            const searchBar = document.getElementById('search-bar');
+            const searchVal = searchBar ? searchBar.value.toLowerCase() : '';
             
             const filtered = allMenuItems.filter(item => {
                 const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
@@ -561,43 +294,114 @@
 
             container.innerHTML = filtered.map(item => {
                 const cartQty = getCartQty(item.id);
-                const badgeClass = item.is_available 
-                    ? "bg-green-500/10 text-primary text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider"
-                    : "bg-red-500/10 text-red-400 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider";
-                const badgeText = item.is_available ? "In Stock" : "Sold Out";
                 
-                const actionBtn = item.is_available
-                    ? `<button onclick="addToCart(${item.id})" class="bg-primary hover:brightness-110 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 active:scale-95 transition-all">
-                        <span class="material-symbols-outlined text-xs font-bold">add</span> Add
-                       </button>`
-                    : `<button class="bg-slate-800 text-slate-500 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-not-allowed" disabled>
-                        Out
-                       </button>`;
+                // Veg/Non-Veg Badge
+                const vegBadge = item.is_veg
+                    ? `<span class="flex items-center gap-1.5 bg-emerald-950/85 text-emerald-400 border border-emerald-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        Veg
+                       </span>`
+                    : `<span class="flex items-center gap-1.5 bg-rose-950/85 text-rose-400 border border-rose-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                        Non-Veg
+                       </span>`;
 
-                const countIndicator = cartQty > 0 
-                    ? `<span class="bg-secondary text-white text-[9px] px-2 py-0.5 rounded font-bold">${cartQty} in cart</span>`
+                // Spicy Badge
+                const spicyBadge = isSpicy(item)
+                    ? `<span class="flex items-center gap-1 bg-amber-950/85 text-amber-300 border border-amber-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md">
+                        🌶️ Spicy
+                       </span>`
+                    : '';
+
+                // Stock Status Pill
+                const stockBadge = item.is_available
+                    ? `<span class="flex items-center gap-1 bg-emerald-950/90 text-emerald-400 border border-emerald-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
+                        In Stock
+                       </span>`
+                    : `<span class="flex items-center gap-1 bg-red-950/90 text-red-400 border border-red-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
+                        Sold Out
+                       </span>`;
+                
+                // CTA Action Button (Color-changing when item is in cart)
+                let actionCTA = '';
+                if (!item.is_available) {
+                    actionCTA = `
+                        <button class="w-full bg-slate-800 text-slate-500 py-2.5 px-4 rounded-xl text-xs font-semibold cursor-not-allowed" disabled>
+                            Out of Stock
+                        </button>
+                    `;
+                } else if (cartQty === 0) {
+                    actionCTA = `
+                        <button onclick="addToCart(event, ${item.id})" class="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-extrabold py-2.5 px-4 rounded-xl text-xs transition-all duration-200 shadow-md shadow-emerald-500/10 active:scale-[0.97]">
+                            <span class="material-symbols-outlined text-[16px] font-bold">add_shopping_cart</span>
+                            Add to Cart
+                        </button>
+                    `;
+                } else {
+                    actionCTA = `
+                        <div class="flex items-center w-full justify-between bg-amber-500/25 border border-amber-500/35 rounded-xl p-0.5 overflow-hidden transition-all duration-300">
+                            <button onclick="decrementCartItem(event, ${item.id})" class="flex items-center justify-center w-10 py-2 hover:bg-amber-500/30 text-amber-400 font-extrabold text-sm transition-colors active:scale-90">-</button>
+                            <span class="text-xs font-black text-amber-300">${cartQty} in Cart</span>
+                            <button onclick="incrementCartItem(event, ${item.id})" class="flex items-center justify-center w-10 py-2 hover:bg-amber-500/30 text-amber-400 font-extrabold text-sm transition-colors active:scale-90">+</button>
+                        </div>
+                    `;
+                }
+
+                // Featured highlight for Bestsellers (orders_count > 120 or rating > 4.5)
+                const isFeatured = item.orders_count > 120 || item.rating >= 4.5;
+                const featuredBorder = isFeatured 
+                    ? 'border-amber-500/25 shadow-lg shadow-amber-500/5' 
+                    : 'border-slate-800/80 shadow-md shadow-slate-950/20';
+                
+                const featuredBadge = isFeatured
+                    ? `<div class="absolute bottom-3 right-3 bg-amber-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full flex items-center gap-0.5 uppercase tracking-wider shadow">
+                        🔥 Bestseller
+                       </div>`
                     : '';
 
                 return `
-                    <div class="bg-slate-800/40 rounded-2xl shadow-sm border border-slate-700/30 overflow-hidden flex gap-3 p-3 hover:shadow-md hover:border-slate-700/60 transition-all duration-200 relative">
-                        <div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 relative ${!item.is_available ? 'grayscale opacity-50' : ''}">
-                            <img class="w-full h-full object-cover" src="${item.image_url}" alt="${item.name}"/>
+                    <div class="flex flex-col justify-between bg-slate-900/40 border ${featuredBorder} rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-1.5 group min-h-[350px] relative">
+                        <!-- Image Container with Overlays -->
+                        <div class="relative w-full h-44 overflow-hidden flex-shrink-0">
+                            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${!item.is_available ? 'grayscale opacity-60' : ''}" src="${item.image_url}" alt="${item.name}"/>
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-90"></div>
+                            
+                            <!-- Badges Overlay -->
+                            <div class="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                                ${vegBadge}
+                                ${spicyBadge}
+                            </div>
+                            
+                            <div class="absolute top-3 right-3">
+                                ${stockBadge}
+                            </div>
+
+                            ${featuredBadge}
                         </div>
-                        <div class="flex-grow flex flex-col justify-between min-w-0">
+                        
+                        <!-- Content Details -->
+                        <div class="p-5 flex flex-col flex-grow justify-between gap-4">
                             <div>
-                                <div class="flex justify-between items-start gap-1">
-                                    <h4 class="text-xs font-bold text-white leading-tight truncate pr-1">${item.name}</h4>
-                                    <div class="${item.is_veg ? 'diet-veg' : 'diet-non-veg'} flex-shrink-0 scale-75 mt-0.5"></div>
-                                </div>
-                                <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                                    <span class="${badgeClass}">${badgeText}</span>
-                                    <span class="text-[9px] text-slate-400">Prep: ${item.prep_time}</span>
-                                    ${countIndicator}
+                                <h4 class="text-base font-extrabold text-white tracking-tight group-hover:text-emerald-400 transition-colors line-clamp-1">${item.name}</h4>
+                                <div class="flex items-center justify-between mt-2">
+                                    <div class="flex items-center gap-1 text-slate-400 text-xs font-semibold font-sans">
+                                        <span class="material-symbols-outlined text-[14px]">schedule</span>
+                                        <span>Prep: ${item.prep_time}</span>
+                                    </div>
+                                    <div class="flex items-center gap-0.5 text-xs font-bold text-amber-400 font-sans">
+                                        <span class="material-symbols-outlined text-[14px] fill-current">star</span>
+                                        <span>${item.rating ? item.rating.toFixed(1) : '4.5'}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between mt-2.5">
-                                <span class="text-white font-extrabold text-sm">₹${item.price}</span>
-                                ${actionBtn}
+                            
+                            <!-- Pricing and Checkout CTA -->
+                            <div class="space-y-3">
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-xs text-slate-400 font-medium font-sans">Price:</span>
+                                    <span class="text-xl font-black text-emerald-400 tracking-tight font-sans">₹${item.price}</span>
+                                </div>
+                                ${actionCTA}
                             </div>
                         </div>
                     </div>
@@ -609,15 +413,15 @@
         function selectCategory(category) {
             activeCategory = category;
             
-            // Highlight categories
-            document.querySelectorAll('.window-sidebar button').forEach(el => {
-                el.className = "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 text-xs font-semibold text-left transition-all";
+            // Highlight categories in the new pill filter container
+            const buttons = document.querySelectorAll('#categories-container button:not(#veg-toggle-btn)');
+            buttons.forEach(btn => {
+                if (btn.id === `cat-${category}`) {
+                    btn.className = "px-4 py-2 rounded-full bg-emerald-500 text-slate-950 text-xs font-extrabold whitespace-nowrap transition-all shadow-md shadow-emerald-500/10 scale-105 duration-300";
+                } else {
+                    btn.className = "px-4 py-2 rounded-full bg-slate-800/60 text-slate-400 text-xs font-bold whitespace-nowrap hover:text-white hover:bg-slate-700/85 transition-all duration-300";
+                }
             });
-            
-            const activeBtn = document.getElementById(`cat-${category}`);
-            if (activeBtn) {
-                activeBtn.className = "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-primary text-slate-950 text-xs font-bold text-left transition-all";
-            }
             
             renderMenu();
         }
@@ -627,14 +431,17 @@
             vegFilterActive = !vegFilterActive;
             const btn = document.getElementById('veg-toggle-btn');
             if (vegFilterActive) {
-                btn.classList.add('bg-primary/20', 'border-primary');
+                btn.classList.add('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-400');
             } else {
-                btn.classList.remove('bg-primary/20', 'border-primary');
+                btn.classList.remove('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-400');
             }
             renderMenu();
         }
 
-        document.getElementById('search-bar').addEventListener('input', renderMenu);
+        const searchBar = document.getElementById('search-bar');
+        if (searchBar) {
+            searchBar.addEventListener('input', renderMenu);
+        }
 
         // Cart Engine Actions
         function getCartQty(itemId) {
@@ -642,7 +449,10 @@
             return entry ? entry.quantity : 0;
         }
 
-        function addToCart(itemId) {
+        function addToCart(event, itemId) {
+            if (event && event.stopPropagation) {
+                event.stopPropagation();
+            }
             const item = allMenuItems.find(m => m.id === itemId);
             if (!item || !item.is_available) return;
 
@@ -664,7 +474,10 @@
             renderMenu();
         }
 
-        function incrementCartItem(itemId) {
+        function incrementCartItem(event, itemId) {
+            if (event && event.stopPropagation) {
+                event.stopPropagation();
+            }
             const itemIndex = cart.findIndex(c => c.id === itemId);
             if (itemIndex !== -1) {
                 cart[itemIndex].quantity += 1;
@@ -673,7 +486,10 @@
             }
         }
 
-        function decrementCartItem(itemId) {
+        function decrementCartItem(event, itemId) {
+            if (event && event.stopPropagation) {
+                event.stopPropagation();
+            }
             const itemIndex = cart.findIndex(c => c.id === itemId);
             if (itemIndex !== -1) {
                 cart[itemIndex].quantity -= 1;
@@ -690,7 +506,10 @@
             const count = cart.reduce((sum, item) => sum + item.quantity, 0);
             
             // Sync all badges
-            document.getElementById('cart-badge-window').textContent = count;
+            const cartBadge = document.getElementById('cart-badge-window');
+            if (cartBadge) {
+                cartBadge.textContent = count;
+            }
             
             renderCartSummary();
         }
@@ -699,35 +518,46 @@
             const cartContainer = document.getElementById('window-cart-items');
             if (!cartContainer) return;
             
+            const checkoutBtn = document.getElementById('window-checkout-btn');
+            const subtotalText = document.getElementById('window-cart-subtotal');
+            
             if (cart.length === 0) {
                 cartContainer.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-16 text-center text-slate-500">
-                        <span class="material-symbols-outlined text-3xl mb-2 text-slate-600">shopping_basket</span>
-                        <p class="text-[10px] font-semibold">Your cart is empty</p>
+                        <span class="material-symbols-outlined text-3xl mb-2 text-slate-600 font-sans">shopping_basket</span>
+                        <p class="text-[10px] font-semibold font-sans">Your cart is empty</p>
                     </div>
                 `;
-                document.getElementById('window-checkout-btn').disabled = true;
-                document.getElementById('window-checkout-btn').classList.add('opacity-50', 'cursor-not-allowed');
-                document.getElementById('window-cart-subtotal').textContent = '₹0';
+                if (checkoutBtn) {
+                    checkoutBtn.disabled = true;
+                    checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                if (subtotalText) {
+                    subtotalText.textContent = '₹0';
+                }
                 return;
             }
             
-            document.getElementById('window-checkout-btn').disabled = false;
-            document.getElementById('window-checkout-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            if (checkoutBtn) {
+                checkoutBtn.disabled = false;
+                checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
             
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            document.getElementById('window-cart-subtotal').textContent = `₹${subtotal}`;
+            if (subtotalText) {
+                subtotalText.textContent = `₹${subtotal}`;
+            }
             
             cartContainer.innerHTML = cart.map(item => `
-                <div class="flex items-center justify-between bg-slate-800/30 p-2 rounded-xl border border-slate-800 gap-1">
+                <div class="flex items-center justify-between bg-slate-800/30 p-2 rounded-xl border border-slate-850 gap-1 animate-fade-in-up font-sans">
                     <div class="flex-grow pr-1 min-w-0">
-                        <h5 class="text-[11px] font-bold text-white truncate max-w-[100px]">${item.name}</h5>
-                        <p class="text-[9px] text-slate-400">₹${item.price} each</p>
+                        <h5 class="text-[11px] font-bold text-white truncate max-w-[120px] font-sans">${item.name}</h5>
+                        <p class="text-[9px] text-slate-400 font-sans">₹${item.price} each</p>
                     </div>
                     <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <button onclick="decrementCartItem(${item.id})" class="w-4.5 h-4.5 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-[10px] font-bold transition-colors px-1">-</button>
-                        <span class="text-[11px] font-bold text-white min-w-[10px] text-center">${item.quantity}</span>
-                        <button onclick="incrementCartItem(${item.id})" class="w-4.5 h-4.5 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-[10px] font-bold transition-colors px-1">+</button>
+                        <button onclick="decrementCartItem(event, ${item.id})" class="w-5 h-5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white flex items-center justify-center text-[11px] font-extrabold transition-colors px-1">-</button>
+                        <span class="text-[11px] font-extrabold text-white min-w-[12px] text-center">${item.quantity}</span>
+                        <button onclick="incrementCartItem(event, ${item.id})" class="w-5 h-5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white flex items-center justify-center text-[11px] font-extrabold transition-colors px-1">+</button>
                     </div>
                 </div>
             `).join('');
@@ -742,12 +572,84 @@
 
         function orderUpcoming() {
             // Quick order Garden Fresh Thali
-            addToCart(1);
+            addToCart(null, 1);
             goToCheckout();
         }
 
-        // Initialize On Load
-        fetchMenu();
+        // Setup real-time listener or fallback
+        async function fetchConfigAndInit() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                firebaseConfig = config.firebaseConfig;
+                await initRealtime();
+            } catch (err) {
+                console.error("Failed to fetch Firebase config, falling back to HTTP polling:", err);
+                startPolling();
+            }
+        }
+
+        async function initRealtime() {
+            if (!firebaseConfig || firebaseConfig.projectId === "YOUR_PROJECT_ID") {
+                console.warn("Firebase is not configured. Falling back to HTTP polling.");
+                startPolling();
+                return;
+            }
+
+            try {
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+                const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                
+                console.log("Firebase initialized successfully on Student Dashboard. Starting listeners.");
+                const app = initializeApp(firebaseConfig);
+                const db = getFirestore(app);
+                
+                // Listen to menu items in real-time
+                unsubscribeMenu = onSnapshot(collection(db, 'menu_items'), (snapshot) => {
+                    const items = [];
+                    snapshot.forEach((doc) => {
+                        items.push({
+                            id: Number(doc.id) || doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    items.sort((a, b) => a.id - b.id);
+                    allMenuItems = items;
+                    renderMenu();
+                }, (error) => {
+                    console.error("Menu onSnapshot error, falling back to polling:", error);
+                    startPolling();
+                });
+
+            } catch (err) {
+                console.error("Failed to initialize Firebase SDK, falling back to HTTP polling:", err);
+                startPolling();
+            }
+        }
+
+        function startPolling() {
+            if (pollingInterval) return;
+            fetchMenu();
+            pollingInterval = setInterval(fetchMenu, 10000);
+        }
+
+        // Bind handlers to window for inline onclick attributes
+        window.selectCategory = selectCategory;
+        window.toggleVegFilter = toggleVegFilter;
+        window.orderUpcoming = orderUpcoming;
+        window.addToCart = addToCart;
+        window.decrementCartItem = decrementCartItem;
+        window.incrementCartItem = incrementCartItem;
+        window.goToCheckout = goToCheckout;
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribeMenu) unsubscribeMenu();
+            if (pollingInterval) clearInterval(pollingInterval);
+        });
+
+        // Initial load
+        fetchConfigAndInit();
         updateCartState();
     </script>
 </body>
