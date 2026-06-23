@@ -837,12 +837,14 @@ app.post('/api/auth/validate-id', async (req, res) => {
   }
 
   // 2. Database Check
+  let dbUser = null;
   if (isFirebaseConfigured && firestoreDb) {
     try {
       const docSnap = await firestoreDb.collection('college_ids').doc(collegeId).get();
       if (!docSnap.exists) {
         return res.status(404).json({ valid: false, error: 'College ID not registered in database.' });
       }
+      dbUser = docSnap.data();
     } catch (e) {
       console.error("Error validating college ID in Firestore:", e);
       return res.status(500).json({ valid: false, error: 'Database check failed' });
@@ -850,8 +852,20 @@ app.post('/api/auth/validate-id', async (req, res) => {
   } else {
     const db = await readDB();
     const registeredIds = db.college_ids || [];
-    if (!registeredIds.includes(collegeId)) {
+    const matchedItem = registeredIds.find(item => {
+      if (typeof item === 'string') {
+        return item === collegeId;
+      } else if (item && typeof item === 'object') {
+        return item.id === collegeId;
+      }
+      return false;
+    });
+
+    if (!matchedItem) {
       return res.status(404).json({ valid: false, error: 'College ID not registered in database.' });
+    }
+    if (typeof matchedItem === 'object') {
+      dbUser = matchedItem;
     }
   }
 
@@ -866,8 +880,35 @@ app.post('/api/auth/validate-id', async (req, res) => {
     return res.status(400).json({ valid: false, error: 'College ID role mismatch. Student ID required.' });
   }
 
+  let userDetails = {
+    collegeId: collegeId,
+    role: role
+  };
+
+  if (dbUser) {
+    userDetails.name = dbUser.name;
+    userDetails.email = dbUser.email;
+    userDetails.role = (dbUser.role === 'chef') ? 'kitchen' : dbUser.role;
+    userDetails.id = dbUser.id || dbUser.user_id || 1;
+  } else {
+    if (role === 'student') {
+      userDetails.name = 'Arjun';
+      userDetails.email = 'arjun@lmcst.ac.in';
+      userDetails.id = 1;
+    } else if (role === 'chef') {
+      userDetails.name = 'Marcus Chen';
+      userDetails.email = 'chef.marcus@lmcst.ac.in';
+      userDetails.role = 'kitchen';
+      userDetails.id = 2;
+    } else if (role === 'admin') {
+      userDetails.name = 'Alex Rivera';
+      userDetails.email = 'admin.alex@lmcst.ac.in';
+      userDetails.id = 3;
+    }
+  }
+
   // Return success
-  res.json({ valid: true, message: 'Authentication successful' });
+  res.json({ valid: true, message: 'Authentication successful', user: userDetails });
 });
 
 // Sync local db.json orders to Firestore if Firestore is active and empty
@@ -910,8 +951,13 @@ async function syncDatabaseToFirestore() {
     const collegeIdsSnapshot = await firestoreDb.collection('college_ids').get();
     if (collegeIdsSnapshot.empty && dbData.college_ids && dbData.college_ids.length > 0) {
       console.log(`Syncing ${dbData.college_ids.length} college IDs from db.json to Firestore...`);
-      for (const id of dbData.college_ids) {
-        await firestoreDb.collection('college_ids').doc(id).set({ valid: true });
+      for (const item of dbData.college_ids) {
+        if (typeof item === 'object' && item !== null) {
+          const { id, ...bodyWithoutId } = item;
+          await firestoreDb.collection('college_ids').doc(id).set({ valid: true, ...bodyWithoutId });
+        } else {
+          await firestoreDb.collection('college_ids').doc(item).set({ valid: true });
+        }
       }
     }
 

@@ -1,13 +1,103 @@
 {
   "college_ids": [
-    "CS-10245-26",
-    "CS-10246-26",
-    "CS-10247-26",
-    "EC-20412-25",
-    "ME-30154-24",
-    "CE-40112-23",
-    "chef-marcus-26",
-    "admin-alex-26"
+    {
+      "id": "CS-10245-26",
+      "name": "Arjun",
+      "email": "arjun@lmcst.ac.in",
+      "role": "student",
+      "user_id": 1
+    },
+    {
+      "id": "EC-20412-25",
+      "name": "Sarah",
+      "email": "sarah@lmcst.ac.in",
+      "role": "student",
+      "user_id": 2
+    },
+    {
+      "id": "CS-10247-26",
+      "name": "Rohan",
+      "email": "rohan@lmcst.ac.in",
+      "role": "student",
+      "user_id": 3
+    },
+    {
+      "id": "CS-10246-26",
+      "name": "Neha",
+      "email": "neha@lmcst.ac.in",
+      "role": "student",
+      "user_id": 4
+    },
+    {
+      "id": "ME-30154-24",
+      "name": "Karthik",
+      "email": "karthik@lmcst.ac.in",
+      "role": "student",
+      "user_id": 5
+    },
+    {
+      "id": "CE-40112-23",
+      "name": "Deepika",
+      "email": "deepika@lmcst.ac.in",
+      "role": "student",
+      "user_id": 6
+    },
+    {
+      "id": "CS-10248-26",
+      "name": "Priya",
+      "email": "priya@lmcst.ac.in",
+      "role": "student",
+      "user_id": 7
+    },
+    {
+      "id": "EC-20413-25",
+      "name": "Vikram",
+      "email": "vikram@lmcst.ac.in",
+      "role": "student",
+      "user_id": 8
+    },
+    {
+      "id": "ME-30155-24",
+      "name": "Aditya",
+      "email": "aditya@lmcst.ac.in",
+      "role": "student",
+      "user_id": 9
+    },
+    {
+      "id": "CE-40113-23",
+      "name": "Ananya",
+      "email": "ananya@lmcst.ac.in",
+      "role": "student",
+      "user_id": 10
+    },
+    {
+      "id": "chef-marcus-26",
+      "name": "Marcus Chen",
+      "email": "chef.marcus@lmcst.ac.in",
+      "role": "chef",
+      "user_id": 11
+    },
+    {
+      "id": "chef-lisa-26",
+      "name": "Lisa Wong",
+      "email": "chef.lisa@lmcst.ac.in",
+      "role": "chef",
+      "user_id": 12
+    },
+    {
+      "id": "admin-alex-26",
+      "name": "Alex Rivera",
+      "email": "admin.alex@lmcst.ac.in",
+      "role": "admin",
+      "user_id": 13
+    },
+    {
+      "id": "admin-clara-26",
+      "name": "Clara Oswald",
+      "email": "admin.clara@lmcst.ac.in",
+      "role": "admin",
+      "user_id": 14
+    }
   ],
   "menu_items": [
     {

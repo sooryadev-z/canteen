@@ -284,19 +284,20 @@
                 const data = await res.json();
 
                 if (res.ok && data.valid) {
-                    // Set mock sessions on success
-                    let user = {};
+                    // Use the user details returned from server, fallback to default mock if undefined
+                    const user = data.user || {
+                        name: selectedRoleName === 'student' ? 'Arjun' : (selectedRoleName === 'chef' ? 'Marcus Chen' : 'Alex Rivera'),
+                        email: selectedRoleName === 'student' ? 'arjun@lmcst.ac.in' : (selectedRoleName === 'chef' ? 'chef.marcus@lmcst.ac.in' : 'admin.alex@lmcst.ac.in'),
+                        role: selectedRoleName === 'chef' ? 'kitchen' : selectedRoleName,
+                        id: selectedRoleName === 'student' ? 1 : (selectedRoleName === 'chef' ? 2 : 3),
+                        collegeId: collegeId
+                    };
+                    sessionStorage.setItem('user', JSON.stringify(user));
                     if (selectedRoleName === 'student') {
-                        user = { name: 'Arjun', email: 'arjun@lmcst.ac.in', role: 'student', id: 1, collegeId };
-                        sessionStorage.setItem('user', JSON.stringify(user));
                         window.location.href = '/student/index.html';
                     } else if (selectedRoleName === 'chef') {
-                        user = { name: 'Marcus Chen', email: 'chef.marcus@lmcst.ac.in', role: 'kitchen', id: 2, collegeId };
-                        sessionStorage.setItem('user', JSON.stringify(user));
                         window.location.href = '/kitchen/index.html';
                     } else if (selectedRoleName === 'admin') {
-                        user = { name: 'Alex Rivera', email: 'admin.alex@lmcst.ac.in', role: 'admin', id: 3, collegeId };
-                        sessionStorage.setItem('user', JSON.stringify(user));
                         window.location.href = '/admin/index.html';
                     }
                 } else {
