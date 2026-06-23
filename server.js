@@ -31,6 +31,10 @@ async function readDB() {
 
 // Helper to write database
 async function writeDB(data) {
+  if (isFirebaseConfigured) {
+    // Skip writing to local db.json when Firebase is active to prevent EROFS errors on serverless environments like Vercel
+    return;
+  }
   try {
     await fs.writeFile(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
   } catch (error) {

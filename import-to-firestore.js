@@ -39,8 +39,9 @@ async function runImporter() {
 
   // 2. Initialize Firebase Admin SDK
   try {
+    const { cert } = admin;
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+      credential: cert(serviceAccount)
     });
     console.log('✔ Firebase Admin SDK initialized successfully.');
   } catch (error) {
@@ -48,7 +49,8 @@ async function runImporter() {
     process.exit(1);
   }
 
-  const db = admin.firestore();
+  const { getFirestore } = require('firebase-admin/firestore');
+  const db = getFirestore();
 
   // 3. Read input JSON file
   let dbData;

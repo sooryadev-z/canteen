@@ -1,4 +1,5 @@
-const admin = require('firebase-admin');
+const { initializeApp: initializeAdminApp, cert } = require('firebase-admin');
+const { getFirestore } = require('firebase-admin/firestore');
 const firebaseCompat = require('firebase/compat/app');
 require('firebase/compat/firestore');
 const dotenv = require('dotenv');
@@ -27,33 +28,33 @@ try {
   // Option 1: Try local serviceAccountKey.json first (development environment)
   if (fs.existsSync(serviceAccountPath)) {
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+    initializeAdminApp({
+      credential: cert(serviceAccount)
     });
-    db = admin.firestore();
+    db = getFirestore();
     isConfigured = true;
     console.log("Firebase Admin SDK initialized successfully via serviceAccountKey.json.");
   }
   // Option 2: Try FIREBASE_SERVICE_ACCOUNT environment variable (Vercel / Production environment)
   else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+    initializeAdminApp({
+      credential: cert(serviceAccount)
     });
-    db = admin.firestore();
+    db = getFirestore();
     isConfigured = true;
     console.log("Firebase Admin SDK initialized successfully via FIREBASE_SERVICE_ACCOUNT env var.");
   }
   // Option 3: Try individual env variables (Vercel / Production environment)
   else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+    initializeAdminApp({
+      credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
       })
     });
-    db = admin.firestore();
+    db = getFirestore();
     isConfigured = true;
     console.log("Firebase Admin SDK initialized successfully via individual env vars.");
   }
