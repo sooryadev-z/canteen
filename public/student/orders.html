@@ -163,166 +163,178 @@
         </a>
     </nav>
 
-    <script>
+    <script type="module">
+        let allOrders = [];
+        let studentFeedbackIds = [];
+        let firebaseConfig = null;
+        let unsubscribeOrders = null;
+        let unsubscribeFeedback = null;
+        let pollingInterval = null;
+
         const loggedInUser = JSON.parse(sessionStorage.getItem('user')) || { id: 1, name: 'Arjun' };
 
-        // Fetch Orders and render
-        async function fetchAndRenderOrders() {
+        // Fallback: Fetch Orders via API
+        async function fetchQueue() {
             try {
                 const res = await fetch('/api/orders');
                 const orders = await res.json();
-                const studentOrders = orders.filter(o => o.user_id === loggedInUser.id);
+                allOrders = orders.filter(o => o.user_id === loggedInUser.id);
                 
                 const fbRes = await fetch('/api/feedback');
                 const feedbacks = await fbRes.json();
-                const studentFeedbackIds = feedbacks.filter(f => f.user_id === loggedInUser.id).map(f => f.menu_item_id);
+                studentFeedbackIds = feedbacks.filter(f => f.user_id === loggedInUser.id).map(f => f.menu_item_id);
+                
+                renderOrders();
+            } catch (err) {
+                console.error("Failed to fetch student orders", err);
+            }
+        }
 
-                if (studentOrders.length === 0) {
-                    document.getElementById('empty-state').classList.remove('hidden');
-                    document.getElementById('active-section').classList.add('hidden');
-                    return;
-                }
+        // Render Orders List
+        function renderOrders() {
+            if (allOrders.length === 0) {
+                document.getElementById('empty-state').classList.remove('hidden');
+                document.getElementById('active-section').classList.add('hidden');
+                return;
+            }
 
-                document.getElementById('empty-state').classList.add('hidden');
-                document.getElementById('active-section').classList.remove('hidden');
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('active-section').classList.remove('hidden');
 
-                const activeOrders = studentOrders.filter(o => o.status !== 'Completed');
-                const pastOrders = studentOrders.filter(o => o.status === 'Completed');
+            const activeOrders = allOrders.filter(o => o.status !== 'Completed');
+            const pastOrders = allOrders.filter(o => o.status === 'Completed');
 
-                // Render Active
-                document.getElementById('active-count-badge').textContent = `${activeOrders.length} Ongoing`;
-                const activeContainer = document.getElementById('active-orders-container');
-                if (activeOrders.length === 0) {
-                    activeContainer.innerHTML = `<div class="text-xs text-slate-450 bg-slate-900 rounded-xl p-4 border border-slate-800 text-center">No active pre-orders right now.</div>`;
-                } else {
-                    activeContainer.innerHTML = activeOrders.map(order => {
-                        const itemsSummary = order.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
-                        
-                        if (order.status === 'Ready') {
-                            return `
-                                <div class="bg-slate-900 rounded-xl p-4 mb-4 border-l-4 border-primary relative overflow-hidden border border-slate-800 animate-fade-in-up">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <div>
-                                            <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
-                                            <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
-                                            <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
-                                        </div>
-                                        <div class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 status-pulse">
-                                            <span class="material-symbols-outlined text-[14px] font-bold">check_circle</span>
-                                            Ready
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center justify-between bg-slate-950/40 border border-slate-850 rounded-lg p-4">
-                                        <div>
-                                            <p class="text-[9px] font-bold text-slate-500">Token Number</p>
-                                            <p class="text-xl font-extrabold text-primary tracking-tighter">${order.token_number}</p>
-                                        </div>
-                                        <div class="h-12 w-12 bg-white rounded-lg flex items-center justify-center p-1 border border-slate-800">
-                                            <span class="material-symbols-outlined text-slate-900 text-3xl font-bold">qr_code_2</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        } else if (order.status === 'Preparing') {
-                            return `
-                                <div class="bg-slate-900 rounded-xl p-4 mb-4 border-l-4 border-secondary border border-slate-800 animate-fade-in-up">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <div>
-                                            <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
-                                            <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
-                                            <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
-                                        </div>
-                                        <div class="bg-secondary/10 text-secondary border border-secondary/20 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-[14px]">restaurant</span>
-                                            Preparing
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2.5 bg-slate-950/40 rounded-lg p-3 border border-slate-850">
-                                        <span class="material-symbols-outlined text-secondary text-sm">schedule</span>
-                                        <p class="text-xs text-slate-300">Estimated wait: <span class="font-bold text-primary">~8 mins</span></p>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            return `
-                                <div class="bg-slate-900 rounded-xl p-4 mb-4 border-l-4 border-slate-600 border border-slate-800 animate-fade-in-up">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <div>
-                                            <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
-                                            <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
-                                            <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
-                                        </div>
-                                        <div class="bg-slate-800 text-slate-400 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-[14px]">hourglass_empty</span>
-                                            Pending
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-2.5 bg-slate-950/40 rounded-lg p-3 border border-slate-850">
-                                        <span class="material-symbols-outlined text-slate-500 text-sm">schedule</span>
-                                        <p class="text-xs text-slate-400">Waiting for kitchen acceptance...</p>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    }).join('');
-                }
-
-                // Render Past
-                const pastContainer = document.getElementById('past-orders-container');
-                if (pastOrders.length === 0) {
-                    pastContainer.innerHTML = `<div class="text-xs text-slate-400 text-center py-6">No order history found.</div>`;
-                } else {
-                    pastContainer.innerHTML = pastOrders.map(order => {
-                        const itemsSummary = order.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
-                        const orderDate = new Date(order.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-                        const orderTime = new Date(order.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-                        const rateItem = order.items[0];
-                        const isRated = rateItem ? studentFeedbackIds.includes(rateItem.id) : true;
-
-                        let rateSection = '';
-                        if (!isRated && rateItem) {
-                            rateSection = `
-                                <button onclick="rateOrder(${rateItem.id}, '${rateItem.name}', '${orderDate}')" class="flex-grow py-2 px-4 rounded-xl bg-secondary text-white font-bold text-xs shadow-sm active:scale-95 transition-all hover:brightness-110 flex items-center justify-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px]">star</span>
-                                    Rate Meal
-                                </button>
-                            `;
-                        } else {
-                            rateSection = `
-                                <div class="flex items-center gap-1 py-2 font-semibold text-xs text-primary bg-primary/5 border border-primary/10 rounded-xl px-4 flex-grow justify-center">
-                                    <span class="material-symbols-outlined text-primary text-xs font-bold">check_circle</span>
-                                    <span>Rated</span>
-                                </div>
-                            `;
-                        }
-
+            // Render Active
+            document.getElementById('active-count-badge').textContent = `${activeOrders.length} Ongoing`;
+            const activeContainer = document.getElementById('active-orders-container');
+            if (activeOrders.length === 0) {
+                activeContainer.innerHTML = `<div class="text-xs text-slate-450 bg-slate-900 rounded-xl p-4 border border-slate-800 text-center">No active pre-orders right now.</div>`;
+            } else {
+                activeContainer.innerHTML = activeOrders.map(order => {
+                    const itemsSummary = order.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
+                    
+                    if (order.status === 'Ready') {
                         return `
-                            <div class="bg-slate-900 rounded-xl p-4 mb-4 border border-slate-800">
-                                <div class="flex gap-3.5">
-                                    <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 relative">
-                                        <img class="w-full h-full object-cover" src="${order.items[0]?.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100'}" alt=""/>
+                            <div class="bg-slate-900 rounded-xl p-4 mb-4 border-l-4 border-primary relative overflow-hidden border border-slate-800 animate-fade-in-up">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
+                                        <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
+                                        <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
                                     </div>
-                                    <div class="flex-grow min-w-0">
-                                        <div class="flex justify-between items-start gap-1">
-                                            <h4 class="text-xs font-bold text-white truncate pr-1">${order.items[0]?.name || 'Canteen Meal'}</h4>
-                                            <p class="text-xs font-bold text-white">₹${order.total_amount.toFixed(2)}</p>
-                                        </div>
-                                        <p class="text-[10px] text-slate-500 mt-0.5 mb-3">${orderDate} • ${orderTime}</p>
-                                        <div class="flex gap-2">
-                                            <button onclick="reorderItems(${order.id})" class="flex-grow py-2 px-4 rounded-xl border border-primary text-primary font-bold text-xs hover:bg-slate-850 transition-colors active:scale-95" id="reorder-btn-${order.id}">
-                                                Reorder
-                                            </button>
-                                            ${rateSection}
-                                        </div>
+                                    <div class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 status-pulse">
+                                        <span class="material-symbols-outlined text-[14px] font-bold">check_circle</span>
+                                        Ready
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between bg-slate-950/40 border border-slate-850 rounded-lg p-4">
+                                    <div>
+                                        <p class="text-[9px] font-bold text-slate-500">Token Number</p>
+                                        <p class="text-xl font-extrabold text-primary tracking-tighter">${order.token_number}</p>
+                                    </div>
+                                    <div class="h-12 w-12 bg-white rounded-lg flex items-center justify-center p-1 border border-slate-800">
+                                        <span class="material-symbols-outlined text-slate-900 text-3xl font-bold">qr_code_2</span>
                                     </div>
                                 </div>
                             </div>
                         `;
-                    }).join('');
-                }
-            } catch (err) {
-                console.error("Error loading student orders", err);
+                    } else if (order.status === 'Preparing') {
+                        return `
+                            <div class="bg-slate-900 rounded-xl p-4 mb-4 border-l-4 border-secondary border border-slate-800 animate-fade-in-up">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
+                                        <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
+                                        <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
+                                    </div>
+                                    <div class="bg-secondary/10 text-secondary border border-secondary/20 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[14px]">restaurant</span>
+                                        Preparing
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2.5 bg-slate-950/40 rounded-lg p-3 border border-slate-850">
+                                    <span class="material-symbols-outlined text-secondary text-sm">schedule</span>
+                                    <p class="text-xs text-slate-300">Estimated wait: <span class="font-bold text-primary">~8 mins</span></p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="bg-slate-900 rounded-xl p-4 mb-4 border-l-4 border-slate-600 border border-slate-800 animate-fade-in-up">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
+                                        <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
+                                        <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
+                                    </div>
+                                    <div class="bg-slate-800 text-slate-400 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[14px]">hourglass_empty</span>
+                                        Pending
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2.5 bg-slate-950/40 rounded-lg p-3 border border-slate-850">
+                                    <span class="material-symbols-outlined text-slate-505 text-sm">schedule</span>
+                                    <p class="text-xs text-slate-400">Waiting for kitchen acceptance...</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }).join('');
+            }
+
+            // Render Past
+            const pastContainer = document.getElementById('past-orders-container');
+            if (pastOrders.length === 0) {
+                pastContainer.innerHTML = `<div class="text-xs text-slate-400 text-center py-6">No order history found.</div>`;
+            } else {
+                pastContainer.innerHTML = pastOrders.map(order => {
+                    const itemsSummary = order.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
+                    const orderDate = new Date(order.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                    const orderTime = new Date(order.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                    const rateItem = order.items[0];
+                    const isRated = rateItem ? studentFeedbackIds.includes(rateItem.id) : true;
+
+                    let rateSection = '';
+                    if (!isRated && rateItem) {
+                        rateSection = `
+                            <button onclick="rateOrder(${rateItem.id}, '${rateItem.name}', '${orderDate}')" class="flex-grow py-2 px-4 rounded-xl bg-secondary text-white font-bold text-xs shadow-sm active:scale-95 transition-all hover:brightness-110 flex items-center justify-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">star</span>
+                                Rate Meal
+                            </button>
+                        `;
+                    } else {
+                        rateSection = `
+                            <div class="flex items-center gap-1 py-2 font-semibold text-xs text-primary bg-primary/5 border border-primary/10 rounded-xl px-4 flex-grow justify-center">
+                                <span class="material-symbols-outlined text-primary text-xs font-bold">check_circle</span>
+                                <span>Rated</span>
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div class="bg-slate-900 rounded-xl p-4 mb-4 border border-slate-800">
+                            <div class="flex gap-3.5">
+                                <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 relative">
+                                    <img class="w-full h-full object-cover" src="${order.items[0]?.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100'}" alt=""/>
+                                </div>
+                                <div class="flex-grow min-w-0">
+                                    <div class="flex justify-between items-start gap-1">
+                                        <h4 class="text-xs font-bold text-white truncate pr-1">${order.items[0]?.name || 'Canteen Meal'}</h4>
+                                        <p class="text-xs font-bold text-white">₹${order.total_amount.toFixed(2)}</p>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500 mt-0.5 mb-3">${orderDate} • ${orderTime}</p>
+                                    <div class="flex gap-2">
+                                        <button onclick="reorderItems(${order.id})" class="flex-grow py-2 px-4 rounded-xl border border-primary text-primary font-bold text-xs hover:bg-slate-850 transition-colors active:scale-95" id="reorder-btn-${order.id}">
+                                            Reorder
+                                        </button>
+                                        ${rateSection}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
         }
 
@@ -338,9 +350,14 @@
             btn.textContent = 'Adding...';
             
             try {
-                const res = await fetch('/api/orders');
-                const orders = await res.json();
-                const order = orders.find(o => o.id === orderId);
+                let order;
+                if (firebaseConfig && firebaseConfig.projectId !== "YOUR_PROJECT_ID") {
+                    order = allOrders.find(o => String(o.id) === String(orderId) || String(o.token_number) === String(orderId));
+                } else {
+                    const res = await fetch('/api/orders');
+                    const orders = await res.json();
+                    order = orders.find(o => o.id === orderId);
+                }
                 
                 if (order) {
                     const cart = order.items.map(item => ({
@@ -364,8 +381,98 @@
             }
         }
 
-        setInterval(fetchAndRenderOrders, 10000);
-        fetchAndRenderOrders();
+        // Setup real-time listener or fallback
+        async function fetchConfigAndInit() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                firebaseConfig = config.firebaseConfig;
+                await initRealtime();
+            } catch (err) {
+                console.error("Failed to fetch Firebase config, falling back to HTTP polling:", err);
+                startPolling();
+            }
+        }
+
+        async function initRealtime() {
+            if (!firebaseConfig || firebaseConfig.projectId === "YOUR_PROJECT_ID") {
+                console.warn("Firebase is not configured. Falling back to HTTP polling.");
+                startPolling();
+                return;
+            }
+
+            try {
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+                const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                
+                console.log("Firebase initialized successfully on Orders view. Starting listeners.");
+                const app = initializeApp(firebaseConfig);
+                const db = getFirestore(app);
+                
+                // 1. Listen to orders
+                unsubscribeOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
+                    const rawOrders = [];
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        rawOrders.push({
+                            id: Number(doc.id) || doc.id,
+                            ...data
+                        });
+                    });
+                    
+                    // Filter for current student
+                    allOrders = rawOrders.filter(o => o.user_id === loggedInUser.id);
+                    allOrders.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    renderOrders();
+                }, (error) => {
+                    console.error("Orders onSnapshot error, falling back to polling:", error);
+                    startPolling();
+                });
+
+                // 2. Listen to feedback
+                unsubscribeFeedback = onSnapshot(collection(db, 'feedback'), (snapshot) => {
+                    const rawFeedbacks = [];
+                    snapshot.forEach((doc) => {
+                        rawFeedbacks.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    studentFeedbackIds = rawFeedbacks
+                        .filter(f => f.user_id === loggedInUser.id)
+                        .map(f => f.menu_item_id);
+                    
+                    renderOrders();
+                }, (error) => {
+                    console.error("Feedback onSnapshot error:", error);
+                });
+
+            } catch (err) {
+                console.error("Failed to initialize Firebase SDK, falling back to HTTP polling:", err);
+                startPolling();
+            }
+        }
+
+        function startPolling() {
+            if (pollingInterval) return;
+            fetchQueue();
+            pollingInterval = setInterval(fetchQueue, 10000);
+        }
+
+        // Bind handlers to window for inline onclick attributes
+        window.rateOrder = rateOrder;
+        window.reorderItems = reorderItems;
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribeOrders) unsubscribeOrders();
+            if (unsubscribeFeedback) unsubscribeFeedback();
+            if (pollingInterval) clearInterval(pollingInterval);
+        });
+
+        // Initial load
+        fetchConfigAndInit();
     </script>
 </body>
 </html>

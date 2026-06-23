@@ -342,12 +342,17 @@
 
     </main>
 
-    <script>
+    <script type="module">
         // State
         let allMenu = [];
         let allOrders = [];
         let allFeedback = [];
         let currentTab = 'overview';
+        let firebaseConfig = null;
+        let unsubscribeMenu = null;
+        let unsubscribeOrders = null;
+        let unsubscribeFeedback = null;
+        let pollingInterval = null;
 
         // Check login session
         const loggedInUser = JSON.parse(sessionStorage.getItem('user'));
@@ -497,7 +502,7 @@
                     body: JSON.stringify({ is_available: newStatus })
                 });
                 if (res.ok) {
-                    fetchDashboard();
+                    refreshDashboard();
                 }
             } catch (err) {
                 console.error(err);
@@ -537,7 +542,7 @@
                 
                 if (res.ok) {
                     toggleNewItemModal(false);
-                    fetchDashboard();
+                    refreshDashboard();
                 }
             } catch (err) {
                 console.error(err);
@@ -551,7 +556,7 @@
                 const res = await fetch(`/api/menu/${id}`, {
                     method: 'DELETE'
                 });
-                if (res.ok) fetchDashboard();
+                if (res.ok) refreshDashboard();
             } catch (err) {
                 console.error(err);
             }
@@ -568,7 +573,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ price: parseFloat(newPrice) })
                 });
-                if (res.ok) fetchDashboard();
+                if (res.ok) refreshDashboard();
             } catch (err) {
                 console.error(err);
             }
@@ -576,7 +581,7 @@
 
         // Local search trigger
         function searchItems() {
-            if (currentTab === 'menu') {
+            if (currentTab === 'menu' || currentTab === 'overview') {
                 renderMenuTable();
             }
         }
@@ -625,11 +630,118 @@
             }
         }
 
-        // Poll summary and statistics
-        setInterval(fetchDashboard, 8000);
+        // Setup real-time listener or fallback
+        async function fetchConfigAndInit() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                firebaseConfig = config.firebaseConfig;
+                await initRealtime();
+            } catch (err) {
+                console.error("Failed to fetch Firebase config, falling back to HTTP polling:", err);
+                startPolling();
+            }
+        }
+
+        async function initRealtime() {
+            if (!firebaseConfig || firebaseConfig.projectId === "YOUR_PROJECT_ID") {
+                console.warn("Firebase is not configured. Falling back to HTTP polling.");
+                startPolling();
+                return;
+            }
+
+            try {
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+                const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                
+                console.log("Firebase initialized successfully on Admin view. Starting listeners.");
+                const app = initializeApp(firebaseConfig);
+                const db = getFirestore(app);
+                
+                // 1. Listen to menu_items
+                unsubscribeMenu = onSnapshot(collection(db, 'menu_items'), (snapshot) => {
+                    allMenu = [];
+                    snapshot.forEach((doc) => {
+                        allMenu.push({
+                            id: Number(doc.id) || doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    allMenu.sort((a, b) => a.id - b.id);
+                    renderDashboard();
+                }, (error) => {
+                    console.error("Menu onSnapshot error, falling back to polling:", error);
+                    startPolling();
+                });
+
+                // 2. Listen to orders
+                unsubscribeOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
+                    allOrders = [];
+                    snapshot.forEach((doc) => {
+                        allOrders.push({
+                            id: Number(doc.id) || doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    allOrders.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    renderDashboard();
+                }, (error) => {
+                    console.error("Orders onSnapshot error:", error);
+                });
+
+                // 3. Listen to feedback
+                unsubscribeFeedback = onSnapshot(collection(db, 'feedback'), (snapshot) => {
+                    allFeedback = [];
+                    snapshot.forEach((doc) => {
+                        allFeedback.push({
+                            id: Number(doc.id) || doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    renderDashboard();
+                }, (error) => {
+                    console.error("Feedback onSnapshot error:", error);
+                });
+
+            } catch (err) {
+                console.error("Failed to initialize Firebase SDK, falling back to HTTP polling:", err);
+                startPolling();
+            }
+        }
+
+        function startPolling() {
+            if (pollingInterval) return;
+            fetchDashboard();
+            pollingInterval = setInterval(fetchDashboard, 8000);
+        }
+
+        function refreshDashboard() {
+            if (!unsubscribeMenu) {
+                fetchDashboard();
+            }
+        }
+
+        // Bind handlers to window for inline onclick attributes in type="module" script
+        window.switchTab = switchTab;
+        window.toggleAvailability = toggleAvailability;
+        window.toggleNewItemModal = toggleNewItemModal;
+        window.submitNewItem = submitNewItem;
+        window.deleteItem = deleteItem;
+        window.editPrice = editPrice;
+        window.searchItems = searchItems;
+        window.generateAISummary = generateAISummary;
+        window.loadAISummary = loadAISummary;
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribeMenu) unsubscribeMenu();
+            if (unsubscribeOrders) unsubscribeOrders();
+            if (unsubscribeFeedback) unsubscribeFeedback();
+            if (pollingInterval) clearInterval(pollingInterval);
+        });
 
         // Init
-        fetchDashboard();
+        fetchConfigAndInit();
         loadAISummary();
     </script>
 </body>

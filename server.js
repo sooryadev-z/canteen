@@ -326,6 +326,18 @@ app.put('/api/orders/:id', async (req, res) => {
 
 // Get all feedback
 app.get('/api/feedback', async (req, res) => {
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const snapshot = await firestoreDb.collection('feedback').get();
+      const feedbacks = [];
+      snapshot.forEach(doc => {
+        feedbacks.push({ id: Number(doc.id) || doc.id, ...doc.data() });
+      });
+      return res.json(feedbacks);
+    } catch (error) {
+      console.error("Error fetching feedback from Firestore, using db.json fallback:", error);
+    }
+  }
   const db = await readDB();
   res.json(db.feedback || []);
 });
@@ -336,8 +348,23 @@ app.post('/api/feedback', async (req, res) => {
   const menu_item_id = parseInt(req.body.menu_item_id);
   const rating = parseInt(req.body.rating);
 
+  let nextId = 1;
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const snapshot = await firestoreDb.collection('feedback').get();
+      const ids = [];
+      snapshot.forEach(doc => ids.push(Number(doc.id)));
+      nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    } catch (e) {
+      console.error("Error finding next feedback ID in Firestore:", e);
+      nextId = db.feedback.length > 0 ? Math.max(...db.feedback.map(f => f.id)) + 1 : 1;
+    }
+  } else {
+    nextId = db.feedback.length > 0 ? Math.max(...db.feedback.map(f => f.id)) + 1 : 1;
+  }
+
   const newFeedback = {
-    id: db.feedback.length > 0 ? Math.max(...db.feedback.map(f => f.id)) + 1 : 1,
+    id: nextId,
     user_id: req.body.user_id || 1,
     user_name: req.body.user_name || 'Arjun',
     menu_item_id: menu_item_id,
@@ -347,9 +374,33 @@ app.post('/api/feedback', async (req, res) => {
     created_at: new Date().toISOString()
   };
 
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      // 1. Write feedback to Firestore
+      const { id, ...bodyWithoutId } = newFeedback;
+      await firestoreDb.collection('feedback').doc(String(newFeedback.id)).set(bodyWithoutId);
+
+      // 2. Recalculate menu item rating in Firestore
+      const itemDocRef = firestoreDb.collection('menu_items').doc(String(menu_item_id));
+      const itemDoc = await itemDocRef.get();
+      if (itemDoc.exists) {
+        const feedbackSnapshot = await firestoreDb.collection('feedback').where('menu_item_id', '==', menu_item_id).get();
+        const ratings = [];
+        feedbackSnapshot.forEach(doc => ratings.push(doc.data().rating));
+        if (!ratings.includes(rating)) {
+          ratings.push(rating);
+        }
+        const avgRating = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
+        await itemDocRef.update({ rating: parseFloat(avgRating.toFixed(1)) });
+      }
+    } catch (e) {
+      console.error("Error writing feedback to Firestore:", e);
+    }
+  }
+
   db.feedback.push(newFeedback);
 
-  // Recalculate menu item average rating
+  // Recalculate menu item average rating locally
   const menuItem = db.menu_items.find(m => m.id === menu_item_id);
   if (menuItem) {
     const itemFeedback = db.feedback.filter(f => f.menu_item_id === menu_item_id);
@@ -368,6 +419,16 @@ app.post('/api/feedback', async (req, res) => {
 
 // Fetch latest briefing
 app.get('/api/insights/summary', async (req, res) => {
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const snapshot = await firestoreDb.collection('ai_briefing').orderBy('date', 'desc').limit(1).get();
+      if (!snapshot.empty) {
+        return res.json(snapshot.docs[0].data());
+      }
+    } catch (error) {
+      console.error("Error fetching AI briefing from Firestore, using db.json fallback:", error);
+    }
+  }
   const db = await readDB();
   const latestBrief = db.ai_briefing && db.ai_briefing.length > 0
     ? db.ai_briefing[db.ai_briefing.length - 1]
@@ -378,8 +439,22 @@ app.get('/api/insights/summary', async (req, res) => {
 
 // Trigger new AI briefing generation
 app.post('/api/insights/generate', async (req, res) => {
-  const db = await readDB();
-  const feedbacks = db.feedback || [];
+  let feedbacks = [];
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const snapshot = await firestoreDb.collection('feedback').get();
+      snapshot.forEach(doc => {
+        feedbacks.push({ id: Number(doc.id) || doc.id, ...doc.data() });
+      });
+    } catch (e) {
+      console.error("Error fetching feedback from Firestore for AI generation:", e);
+    }
+  }
+
+  if (feedbacks.length === 0) {
+    const db = await readDB();
+    feedbacks = db.feedback || [];
+  }
 
   if (feedbacks.length === 0) {
     return res.json({
@@ -395,9 +470,6 @@ app.post('/api/insights/generate', async (req, res) => {
 
   if (apiKey) {
     try {
-      // Initialize Gemini SDK
-      // Note: Depending on which version of @google/generative-ai is installed,
-      // it might use GoogleGenAI or GoogleGenerativeAI. Let's make it robust.
       let model;
       try {
         const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -440,7 +512,15 @@ Make it encouraging but direct. Use Markdown format. Keep it concise so kitchen 
     content: briefingContent
   };
 
-  // Replace today's briefing or add a new one
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      await firestoreDb.collection('ai_briefing').doc(newBrief.date).set(newBrief);
+    } catch (e) {
+      console.error("Error writing AI briefing to Firestore:", e);
+    }
+  }
+
+  const db = await readDB();
   if (!db.ai_briefing) db.ai_briefing = [];
   const todayStr = newBrief.date;
   const existingIndex = db.ai_briefing.findIndex(b => b.date === todayStr);
