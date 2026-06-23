@@ -50,15 +50,46 @@ app.get('/api/config', (req, res) => {
 
 // Get all menu items
 app.get('/api/menu', async (req, res) => {
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const { getDocs, collection } = require('firebase/firestore');
+      const snapshot = await getDocs(collection(firestoreDb, 'menu_items'));
+      const items = [];
+      snapshot.forEach(doc => {
+        items.push({ id: Number(doc.id), ...doc.data() });
+      });
+      items.sort((a, b) => a.id - b.id);
+      return res.json(items);
+    } catch (error) {
+      console.error("Error fetching menu from Firestore, using db.json fallback:", error);
+    }
+  }
   const db = await readDB();
   res.json(db.menu_items || []);
 });
 
 // Add menu item
 app.post('/api/menu', async (req, res) => {
+  let nextId = 1;
   const db = await readDB();
+  
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const { getDocs, collection } = require('firebase/firestore');
+      const snapshot = await getDocs(collection(firestoreDb, 'menu_items'));
+      const ids = [];
+      snapshot.forEach(doc => ids.push(Number(doc.id)));
+      nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    } catch (e) {
+      console.error("Error finding next menu ID in Firestore:", e);
+      nextId = db.menu_items.length > 0 ? Math.max(...db.menu_items.map(i => i.id)) + 1 : 1;
+    }
+  } else {
+    nextId = db.menu_items.length > 0 ? Math.max(...db.menu_items.map(i => i.id)) + 1 : 1;
+  }
+
   const newItem = {
-    id: db.menu_items.length > 0 ? Math.max(...db.menu_items.map(i => i.id)) + 1 : 1,
+    id: nextId,
     name: req.body.name,
     category: req.body.category || 'Lunch',
     price: parseFloat(req.body.price),
@@ -70,6 +101,16 @@ app.post('/api/menu', async (req, res) => {
     rating: 5.0,
     orders_count: 0
   };
+
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const { doc, setDoc } = require('firebase/firestore');
+      await setDoc(doc(firestoreDb, 'menu_items', String(newItem.id)), newItem);
+    } catch (e) {
+      console.error("Error writing menu item to Firestore:", e);
+    }
+  }
+
   db.menu_items.push(newItem);
   await writeDB(db);
   res.status(201).json(newItem);
@@ -80,23 +121,62 @@ app.put('/api/menu/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   const db = await readDB();
   const index = db.menu_items.findIndex(i => i.id === id);
-  if (index === -1) {
+  
+  let item = null;
+  if (index !== -1) {
+    item = db.menu_items[index];
+  }
+
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const { getDoc, doc } = require('firebase/firestore');
+      const docSnap = await getDoc(doc(firestoreDb, 'menu_items', String(id)));
+      if (docSnap.exists()) {
+        item = { id, ...docSnap.data() };
+      }
+    } catch (e) {
+      console.error("Error fetching menu item from Firestore:", e);
+    }
+  }
+
+  if (!item) {
     return res.status(404).json({ error: 'Menu item not found' });
   }
 
-  const item = db.menu_items[index];
   const updatedItem = {
     ...item,
     ...req.body
   };
-  db.menu_items[index] = updatedItem;
-  await writeDB(db);
+
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const { doc, setDoc } = require('firebase/firestore');
+      await setDoc(doc(firestoreDb, 'menu_items', String(id)), updatedItem);
+    } catch (e) {
+      console.error("Error updating menu item in Firestore:", e);
+    }
+  }
+
+  if (index !== -1) {
+    db.menu_items[index] = updatedItem;
+    await writeDB(db);
+  }
   res.json(updatedItem);
 });
 
 // Delete menu item
 app.delete('/api/menu/:id', async (req, res) => {
   const id = parseInt(req.params.id);
+
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const { deleteDoc, doc } = require('firebase/firestore');
+      await deleteDoc(doc(firestoreDb, 'menu_items', String(id)));
+    } catch (e) {
+      console.error("Error deleting menu item from Firestore:", e);
+    }
+  }
+
   const db = await readDB();
   db.menu_items = db.menu_items.filter(i => i.id !== id);
   await writeDB(db);
@@ -110,6 +190,20 @@ app.delete('/api/menu/:id', async (req, res) => {
 
 // Get all orders
 app.get('/api/orders', async (req, res) => {
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const { getDocs, collection } = require('firebase/firestore');
+      const snapshot = await getDocs(collection(firestoreDb, 'orders'));
+      const orders = [];
+      snapshot.forEach(doc => {
+        orders.push({ id: Number(doc.id), ...doc.data() });
+      });
+      orders.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      return res.json(orders);
+    } catch (error) {
+      console.error("Error fetching orders from Firestore, using db.json fallback:", error);
+    }
+  }
   const db = await readDB();
   res.json(db.orders || []);
 });
@@ -117,10 +211,27 @@ app.get('/api/orders', async (req, res) => {
 // Place new order
 app.post('/api/orders', async (req, res) => {
   const db = await readDB();
+  let nextId = 1;
+
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const { getDocs, collection } = require('firebase/firestore');
+      const snapshot = await getDocs(collection(firestoreDb, 'orders'));
+      const ids = [];
+      snapshot.forEach(doc => ids.push(Number(doc.id)));
+      nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    } catch (e) {
+      console.error("Error finding next order ID in Firestore:", e);
+      nextId = db.orders.length > 0 ? Math.max(...db.orders.map(o => o.id)) + 1 : 1;
+    }
+  } else {
+    nextId = db.orders.length > 0 ? Math.max(...db.orders.map(o => o.id)) + 1 : 1;
+  }
+
   const tokenNum = `#SC-${Math.floor(100 + Math.random() * 900)}`;
 
   const newOrder = {
-    id: db.orders.length > 0 ? Math.max(...db.orders.map(o => o.id)) + 1 : 1,
+    id: nextId,
     user_id: req.body.user_id || 1,
     user_name: req.body.user_name || 'Arjun',
     total_amount: parseFloat(req.body.total_amount),
@@ -132,26 +243,39 @@ app.post('/api/orders', async (req, res) => {
     created_at: new Date().toISOString()
   };
 
-  db.orders.push(newOrder);
-
   // Increment order count for items
-  newOrder.items.forEach(orderItem => {
-    const menuItem = db.menu_items.find(m => m.id === orderItem.id);
+  for (const orderItem of newOrder.items) {
+    const menuItemId = orderItem.id;
+    const menuItem = db.menu_items.find(m => m.id === menuItemId);
     if (menuItem) {
       menuItem.orders_count = (menuItem.orders_count || 0) + (orderItem.quantity || 1);
     }
-  });
-
-  await writeDB(db);
+    if (isFirebaseConfigured && firestoreDb) {
+      try {
+        const { getDoc, doc, updateDoc } = require('firebase/firestore');
+        const itemDocRef = doc(firestoreDb, 'menu_items', String(menuItemId));
+        const itemDoc = await getDoc(itemDocRef);
+        if (itemDoc.exists()) {
+          const currentCount = itemDoc.data().orders_count || 0;
+          await updateDoc(itemDocRef, { orders_count: currentCount + (orderItem.quantity || 1) });
+        }
+      } catch (e) {
+        console.error("Error updating menu item order count in Firestore:", e);
+      }
+    }
+  }
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
+      const { doc, setDoc } = require('firebase/firestore');
       await setDoc(doc(firestoreDb, 'orders', String(newOrder.id)), newOrder);
     } catch (e) {
       console.error("Failed to save order to Firestore:", e);
     }
   }
 
+  db.orders.push(newOrder);
+  await writeDB(db);
   res.status(201).json(newOrder);
 });
 
@@ -160,24 +284,45 @@ app.put('/api/orders/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   const db = await readDB();
   const index = db.orders.findIndex(o => o.id === id);
-  if (index === -1) {
+  
+  let order = null;
+  if (index !== -1) {
+    order = db.orders[index];
+  }
+
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const { getDoc, doc } = require('firebase/firestore');
+      const docSnap = await getDoc(doc(firestoreDb, 'orders', String(id)));
+      if (docSnap.exists()) {
+        order = { id, ...docSnap.data() };
+      }
+    } catch (e) {
+      console.error("Error fetching order from Firestore:", e);
+    }
+  }
+
+  if (!order) {
     return res.status(404).json({ error: 'Order not found' });
   }
 
-  const order = db.orders[index];
   const updatedOrder = {
     ...order,
     status: req.body.status // Pending, Preparing, Ready, Completed
   };
-  db.orders[index] = updatedOrder;
-  await writeDB(db);
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      await updateDoc(doc(firestoreDb, 'orders', String(id)), { status: req.body.status });
+      const { doc, setDoc } = require('firebase/firestore');
+      await setDoc(doc(firestoreDb, 'orders', String(id)), updatedOrder);
     } catch (e) {
-      console.error("Failed to update order status in Firestore:", e);
+      console.error("Failed to update order in Firestore:", e);
     }
+  }
+
+  if (index !== -1) {
+    db.orders[index] = updatedOrder;
+    await writeDB(db);
   }
 
   res.json(updatedOrder);
@@ -428,18 +573,55 @@ app.post('/api/auth/validate-id', async (req, res) => {
 async function syncDatabaseToFirestore() {
   if (!isFirebaseConfigured || !firestoreDb) return;
   try {
-    const { getDocs, collection } = require('firebase/firestore');
+    const { getDocs, collection, setDoc, doc } = require('firebase/firestore');
     const dbData = await readDB();
-    const querySnapshot = await getDocs(collection(firestoreDb, 'orders'));
-    if (querySnapshot.empty && dbData.orders && dbData.orders.length > 0) {
+
+    // 1. Sync orders
+    const ordersSnapshot = await getDocs(collection(firestoreDb, 'orders'));
+    if (ordersSnapshot.empty && dbData.orders && dbData.orders.length > 0) {
       console.log(`Syncing ${dbData.orders.length} orders from db.json to Firestore...`);
       for (const order of dbData.orders) {
         await setDoc(doc(firestoreDb, 'orders', String(order.id)), order);
       }
-      console.log("Firestore sync complete.");
-    } else {
-      console.log("Firestore orders collection already has records or db.json has no orders. Skipping sync.");
     }
+
+    // 2. Sync menu_items
+    const menuSnapshot = await getDocs(collection(firestoreDb, 'menu_items'));
+    if (menuSnapshot.empty && dbData.menu_items && dbData.menu_items.length > 0) {
+      console.log(`Syncing ${dbData.menu_items.length} menu items from db.json to Firestore...`);
+      for (const item of dbData.menu_items) {
+        await setDoc(doc(firestoreDb, 'menu_items', String(item.id)), item);
+      }
+    }
+
+    // 3. Sync feedback
+    const feedbackSnapshot = await getDocs(collection(firestoreDb, 'feedback'));
+    if (feedbackSnapshot.empty && dbData.feedback && dbData.feedback.length > 0) {
+      console.log(`Syncing ${dbData.feedback.length} feedback items from db.json to Firestore...`);
+      for (const f of dbData.feedback) {
+        await setDoc(doc(firestoreDb, 'feedback', String(f.id)), f);
+      }
+    }
+
+    // 4. Sync college_ids
+    const collegeIdsSnapshot = await getDocs(collection(firestoreDb, 'college_ids'));
+    if (collegeIdsSnapshot.empty && dbData.college_ids && dbData.college_ids.length > 0) {
+      console.log(`Syncing ${dbData.college_ids.length} college IDs from db.json to Firestore...`);
+      for (const id of dbData.college_ids) {
+        await setDoc(doc(firestoreDb, 'college_ids', id), { valid: true });
+      }
+    }
+
+    // 5. Sync ai_briefing
+    const aiBriefingSnapshot = await getDocs(collection(firestoreDb, 'ai_briefing'));
+    if (aiBriefingSnapshot.empty && dbData.ai_briefing && dbData.ai_briefing.length > 0) {
+      console.log(`Syncing ${dbData.ai_briefing.length} AI briefings from db.json to Firestore...`);
+      for (const brief of dbData.ai_briefing) {
+        await setDoc(doc(firestoreDb, 'ai_briefing', brief.date), brief);
+      }
+    }
+
+    console.log("Firestore initialization/sync checks complete.");
   } catch (err) {
     console.error("Error syncing db.json to Firestore:", err);
   }
