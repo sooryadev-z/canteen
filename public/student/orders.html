@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link href="/css/styles.css" rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -173,6 +174,12 @@
 
         const loggedInUser = JSON.parse(sessionStorage.getItem('user')) || { id: 1, name: 'Arjun' };
 
+        function formatTime(isoString) {
+            if (!isoString) return '';
+            const date = new Date(isoString);
+            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
         // Fallback: Fetch Orders via API
         async function fetchQueue() {
             try {
@@ -201,84 +208,154 @@
             document.getElementById('empty-state').classList.add('hidden');
             document.getElementById('active-section').classList.remove('hidden');
 
-            const activeOrders = allOrders.filter(o => o.status !== 'Completed');
-            const pastOrders = allOrders.filter(o => o.status === 'Completed');
+            const activeOrders = allOrders.filter(o => o.status !== 'Completed' && o.status !== 'Handed Over');
+            const pastOrders = allOrders.filter(o => o.status === 'Completed' || o.status === 'Handed Over');
 
             // Render Active
             document.getElementById('active-count-badge').textContent = `${activeOrders.length} Ongoing`;
             const activeContainer = document.getElementById('active-orders-container');
             if (activeOrders.length === 0) {
-                activeContainer.innerHTML = `<div class="text-xs text-slate-450 bg-slate-900 rounded-xl p-4 border border-slate-800 text-center">No active pre-orders right now.</div>`;
+                activeContainer.innerHTML = `<div class="text-xs text-slate-400 text-center py-6">No ongoing orders.</div>`;
             } else {
                 activeContainer.innerHTML = activeOrders.map(order => {
                     const itemsSummary = order.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
                     
-                    if (order.status === 'Ready') {
-                        return `
-                            <div class="bg-slate-900 rounded-xl p-4 mb-4 border-l-4 border-primary relative overflow-hidden border border-slate-800 animate-fade-in-up">
-                                <div class="flex justify-between items-start mb-4">
-                                    <div>
-                                        <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
-                                        <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
-                                        <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
-                                    </div>
-                                    <div class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 status-pulse">
-                                        <span class="material-symbols-outlined text-[14px] font-bold">check_circle</span>
-                                        Ready
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between bg-slate-950/40 border border-slate-850 rounded-lg p-4">
-                                    <div>
-                                        <p class="text-[9px] font-bold text-slate-500">Token Number</p>
-                                        <p class="text-xl font-extrabold text-primary tracking-tighter">${order.token_number}</p>
-                                    </div>
-                                    <div class="h-12 w-12 bg-white rounded-lg flex items-center justify-center p-1 border border-slate-800">
-                                        <span class="material-symbols-outlined text-slate-900 text-3xl font-bold">qr_code_2</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                    // Determine step states and progress line width
+                    let progressPercent = 0;
+                    let isStep1Active = false;
+                    let isStep2Active = false;
+                    let isStep2Completed = false;
+                    let isStep3Active = false;
+                    let isStep3Completed = false;
+                    let isStep4Active = false;
+
+                    let statusText = order.status;
+                    let statusColorClass = 'text-slate-400 bg-slate-800 border-slate-700';
+                    let statusIcon = 'hourglass_empty';
+
+                    if (order.status === 'Pending') {
+                        progressPercent = 12;
+                        isStep1Active = true;
+                        statusText = 'Pending';
+                        statusColorClass = 'text-slate-400 bg-slate-800/80 border-slate-700/50';
+                        statusIcon = 'hourglass_empty';
                     } else if (order.status === 'Preparing') {
-                        return `
-                            <div class="bg-slate-900 rounded-xl p-4 mb-4 border-l-4 border-secondary border border-slate-800 animate-fade-in-up">
-                                <div class="flex justify-between items-start mb-4">
-                                    <div>
-                                        <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
-                                        <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
-                                        <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
-                                    </div>
-                                    <div class="bg-secondary/10 text-secondary border border-secondary/20 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-[14px]">restaurant</span>
-                                        Preparing
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2.5 bg-slate-950/40 rounded-lg p-3 border border-slate-850">
-                                    <span class="material-symbols-outlined text-secondary text-sm">schedule</span>
-                                    <p class="text-xs text-slate-300">Estimated wait: <span class="font-bold text-primary">~8 mins</span></p>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        return `
-                            <div class="bg-slate-900 rounded-xl p-4 mb-4 border-l-4 border-slate-600 border border-slate-800 animate-fade-in-up">
-                                <div class="flex justify-between items-start mb-4">
-                                    <div>
-                                        <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
-                                        <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
-                                        <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
-                                    </div>
-                                    <div class="bg-slate-800 text-slate-400 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-[14px]">hourglass_empty</span>
-                                        Pending
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2.5 bg-slate-950/40 rounded-lg p-3 border border-slate-850">
-                                    <span class="material-symbols-outlined text-slate-505 text-sm">schedule</span>
-                                    <p class="text-xs text-slate-400">Waiting for kitchen acceptance...</p>
-                                </div>
-                            </div>
-                        `;
+                        progressPercent = 50;
+                        isStep1Active = true;
+                        isStep2Active = true;
+                        statusText = 'Preparing';
+                        statusColorClass = 'text-secondary bg-secondary/10 border-secondary/20';
+                        statusIcon = 'restaurant';
+                    } else if (order.status === 'Ready') {
+                        progressPercent = 88;
+                        isStep1Active = true;
+                        isStep2Completed = true;
+                        isStep3Active = true;
+                        statusText = 'Ready';
+                        statusColorClass = 'text-primary bg-primary/10 border-primary/20 status-pulse';
+                        statusIcon = 'check_circle';
+                    } else if (order.status === 'Handed Over' || order.status === 'Completed') {
+                        progressPercent = 100;
+                        isStep1Active = true;
+                        isStep2Completed = true;
+                        isStep3Completed = true;
+                        isStep4Active = true;
+                        statusText = 'Collected';
+                        statusColorClass = 'text-slate-450 bg-slate-800/80 border-slate-700/50';
+                        statusIcon = 'inventory';
                     }
+
+                    // Timeline tracker HTML
+                    const timelineHtml = `
+                        <div class="mt-4 pt-4 border-t border-slate-800/60 relative">
+                            <!-- Progress Bar Line Background -->
+                            <div class="absolute left-6 right-6 top-[28px] h-[3px] bg-slate-800 z-0 rounded-full"></div>
+                            <!-- Active Progress Line -->
+                            <div class="absolute left-6 top-[28px] h-[3px] bg-primary z-0 rounded-full transition-all duration-700" style="width: calc(${progressPercent}% - 12px)"></div>
+                            
+                            <div class="flex justify-between items-start relative z-10">
+                                <!-- Step 1: Placed -->
+                                <div class="flex flex-col items-center min-w-[50px]">
+                                    <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isStep1Active ? 'bg-primary text-slate-950 shadow-md shadow-primary/20' : 'bg-slate-850 text-slate-500 border border-slate-800'}">
+                                        <span class="material-symbols-outlined text-[14px]">receipt</span>
+                                    </div>
+                                    <span class="text-[9px] font-bold mt-1.5 ${isStep1Active ? 'text-white' : 'text-slate-500'}">Placed</span>
+                                    <span class="text-[8px] text-slate-400 mt-0.5">${formatTime(order.pendingAt || order.created_at)}</span>
+                                </div>
+                                
+                                <!-- Step 2: Preparing -->
+                                <div class="flex flex-col items-center min-w-[50px]">
+                                    <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isStep2Active ? 'bg-secondary text-slate-950 shadow-md shadow-secondary/20 animate-pulse' : (isStep2Completed ? 'bg-primary text-slate-950' : 'bg-slate-850 text-slate-500 border border-slate-800')}">
+                                        <span class="material-symbols-outlined text-[14px]">restaurant</span>
+                                    </div>
+                                    <span class="text-[9px] font-bold mt-1.5 ${isStep2Active ? 'text-secondary font-black' : (isStep2Completed ? 'text-white' : 'text-slate-500')}">Preparing</span>
+                                    <span class="text-[8px] text-slate-400 mt-0.5">${formatTime(order.preparingAt)}</span>
+                                </div>
+                                
+                                <!-- Step 3: Ready -->
+                                <div class="flex flex-col items-center min-w-[50px]">
+                                    <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isStep3Active ? 'bg-primary text-slate-950 shadow-md shadow-primary/20 status-pulse animate-pulse' : (isStep3Completed ? 'bg-primary text-slate-950' : 'bg-slate-850 text-slate-500 border border-slate-800')}">
+                                        <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                    </div>
+                                    <span class="text-[9px] font-bold mt-1.5 ${isStep3Active ? 'text-primary font-black animate-pulse' : (isStep3Completed ? 'text-white' : 'text-slate-500')}">Ready</span>
+                                    <span class="text-[8px] text-slate-400 mt-0.5">${formatTime(order.readyAt)}</span>
+                                </div>
+                                
+                                <!-- Step 4: Handed Over -->
+                                <div class="flex flex-col items-center min-w-[50px]">
+                                    <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isStep4Active ? 'bg-slate-750 text-white' : 'bg-slate-850 text-slate-500 border border-slate-800'}">
+                                        <span class="material-symbols-outlined text-[14px]">inventory</span>
+                                    </div>
+                                    <span class="text-[9px] font-bold mt-1.5 ${isStep4Active ? 'text-white' : 'text-slate-500'}">Collected</span>
+                                    <span class="text-[8px] text-slate-400 mt-0.5">${formatTime(order.handedOverAt)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Estimated Wait info block
+                    let estWaitText = 'Waiting for kitchen to accept pre-order...';
+                    if (order.status === 'Preparing') {
+                        estWaitText = 'Est. Cooking: 5-8 mins remaining';
+                    } else if (order.status === 'Ready') {
+                        estWaitText = 'Order is Ready! Present QR below to claim';
+                    }
+
+                    return `
+                        <div class="bg-slate-900 rounded-xl p-4 mb-4 border border-slate-800/80 animate-fade-in-up">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <p class="text-[9px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Pickup slot: ${order.pickup_slot}</p>
+                                    <h3 class="text-sm font-bold text-white">${order.items[0]?.name || 'Pre-Order'}</h3>
+                                    <p class="text-xs text-slate-400 mt-0.5">${itemsSummary}</p>
+                                </div>
+                                <div class="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 border ${statusColorClass}">
+                                    <span class="material-symbols-outlined text-[14px]">${statusIcon}</span>
+                                    ${statusText}
+                                </div>
+                            </div>
+
+                            <!-- Visual Step Tracker Timeline -->
+                            ${timelineHtml}
+
+                            <!-- Wait message -->
+                            <div class="text-[10px] text-slate-400 flex items-center gap-1.5 mt-4 bg-slate-950/30 p-2.5 rounded-xl border border-slate-850/40">
+                                <span class="w-1.5 h-1.5 rounded-full ${order.status === 'Preparing' ? 'bg-secondary animate-pulse' : (order.status === 'Ready' ? 'bg-primary animate-ping' : 'bg-slate-500')}"></span>
+                                <span>${estWaitText}</span>
+                            </div>
+
+                            <!-- Token & QR scan section -->
+                            <div class="flex items-center justify-between bg-slate-950/40 border border-slate-850 rounded-lg p-3 mt-3">
+                                <div>
+                                    <p class="text-[9px] font-bold text-slate-500">Token Number</p>
+                                    <p class="text-lg font-extrabold text-white tracking-tighter">${order.token_number}</p>
+                                </div>
+                                <div onclick="showQRModal('${order.id}')" class="h-10 w-10 bg-white rounded-lg flex items-center justify-center p-1 border border-slate-800 cursor-pointer hover:border-primary hover:scale-105 active:scale-95 transition-all" title="Click to show QR Code">
+                                    <span class="material-symbols-outlined text-slate-900 text-2xl font-bold">qr_code_2</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }).join('');
             }
 
@@ -410,15 +487,31 @@
                 const db = getFirestore(app);
                 
                 // 1. Listen to orders
+                const previousOrderStatuses = new Map();
+                let isFirstOrderSnapshot = true;
+
                 unsubscribeOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
                     const rawOrders = [];
                     snapshot.forEach((doc) => {
                         const data = doc.data();
+                        const orderId = doc.id;
                         rawOrders.push({
                             id: Number(doc.id) || doc.id,
                             ...data
                         });
+
+                        // Notify student if state transitions to Ready
+                        if (data.user_id === loggedInUser.id) {
+                            const oldStatus = previousOrderStatuses.get(orderId);
+                            if (!isFirstOrderSnapshot && oldStatus === 'Preparing' && data.status === 'Ready') {
+                                const message = `Your order ${data.token_number} is ready for pickup.`;
+                                showToast(message);
+                                triggerBrowserNotification(data.token_number);
+                            }
+                            previousOrderStatuses.set(orderId, data.status);
+                        }
                     });
+                    isFirstOrderSnapshot = false;
                     
                     // Filter for current student
                     allOrders = rawOrders.filter(o => o.user_id === loggedInUser.id);
@@ -460,9 +553,121 @@
             pollingInterval = setInterval(fetchQueue, 10000);
         }
 
+        function showQRModal(orderId) {
+            const order = allOrders.find(o => String(o.id) === String(orderId));
+            if (!order) return;
+
+            let modal = document.getElementById('qr-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'qr-modal';
+                modal.className = 'fixed inset-0 z-[100] flex items-center justify-center hidden bg-black/80 backdrop-blur-sm p-4';
+                modal.innerHTML = `
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full relative flex flex-col items-center gap-4 text-center animate-fade-in-up">
+                        <button onclick="closeQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                        <h3 class="text-base font-extrabold text-white">Order Pickup Verification</h3>
+                        <p class="text-[10px] text-slate-400">Present this QR code to the kitchen staff to claim your order.</p>
+                        <div class="bg-white p-3 rounded-2xl border-4 border-primary/20 shadow-lg" id="modal-qr-container"></div>
+                        <div class="w-full space-y-1 bg-slate-950/50 p-3 rounded-xl border border-slate-850 text-left text-[11px] font-mono">
+                            <div class="flex justify-between"><span class="text-slate-500">Order ID:</span><span class="text-white font-bold" id="qr-modal-order-id"></span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Token Num:</span><span class="text-primary font-bold" id="qr-modal-token"></span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Student ID:</span><span class="text-white font-bold" id="qr-modal-student-id"></span></div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            
+            const qrContainer = document.getElementById('modal-qr-container');
+            qrContainer.innerHTML = '';
+            
+            const storedPayload = order.qrPayload || {
+                orderId: String(order.id),
+                tokenNumber: order.token_number,
+                studentId: loggedInUser.collegeId || 'CS-10245-26'
+            };
+
+            document.getElementById('qr-modal-order-id').textContent = storedPayload.orderId;
+            document.getElementById('qr-modal-token').textContent = storedPayload.tokenNumber;
+            document.getElementById('qr-modal-student-id').textContent = storedPayload.studentId;
+
+            const qrData = JSON.stringify({
+                orderId: storedPayload.orderId,
+                token: storedPayload.tokenNumber,
+                studentId: storedPayload.studentId
+            });
+
+            new QRCode(qrContainer, {
+                text: qrData,
+                width: 180,
+                height: 180,
+                colorDark: '#0f172a',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        // Toast Notification System
+        function showToast(message) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-20 right-4 z-[9999] flex flex-col gap-2 pointer-events-none';
+                document.body.appendChild(container);
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = 'animate-fade-in-up bg-slate-900 border border-emerald-500/30 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md pointer-events-auto max-w-sm';
+            toast.innerHTML = `
+                <span class="material-symbols-outlined text-primary">check_circle</span>
+                <div class="flex-grow">
+                    <p class="text-xs font-bold">${message}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.5s ease-out';
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+
+        // Request browser notification permission
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        function triggerBrowserNotification(tokenNumber) {
+            if (Notification.permission === 'granted') {
+                new Notification("CafeGo Order Ready", {
+                    body: `Your order ${tokenNumber} is ready for pickup.`,
+                    icon: "https://lh3.googleusercontent.com/aida-public/AB6AXuADEUPr8GJpMcuQcACnK1Hs9JierNenB8TwdaZXtYELr1t5sn-3qYDS-DZUYeXKBKcRCZyZYtn1BySwBeQv6l4s79eJOyjBUwp7lzPIJGPlDRMuxV3IbULJvnRM2xeZIi6ZAu5KhslvnKDnW-VIvei5ONFZJ3sUxH3Fsn_v4uUnXXcPUY2_ypFxJCWqisW2bfjuop02HJb1VVexAr4yuZ3UbaDj74NQnTsjReJLXSJdSPvykSZvCyqTLbyoue7RcXoUPwJ-C-0t9zN2"
+                });
+            }
+        }
+
+        function closeQRModal() {
+            const modal = document.getElementById('qr-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
         // Bind handlers to window for inline onclick attributes
         window.rateOrder = rateOrder;
         window.reorderItems = reorderItems;
+        window.showQRModal = showQRModal;
+        window.closeQRModal = closeQRModal;
 
         // Cleanup
         window.addEventListener('beforeunload', () => {

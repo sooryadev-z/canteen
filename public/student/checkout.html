@@ -256,7 +256,30 @@
             updateTotals(subtotal);
         }
 
+        let allMenuItems = [];
+
+        async function initCheckout() {
+            try {
+                const res = await fetch('/api/menu');
+                allMenuItems = await res.json();
+            } catch (err) {
+                console.error("Failed to load menu stock data", err);
+            }
+            renderCart();
+        }
+
         function changeQty(index, dir) {
+            if (dir === 1) {
+                const cartItem = cart[index];
+                const menuItem = allMenuItems.find(m => m.id === cartItem.id);
+                if (menuItem) {
+                    const stock = menuItem.stock !== undefined ? menuItem.stock : 25;
+                    if (cartItem.quantity >= stock) {
+                        alert(`Cannot add more. Only ${stock} items in stock.`);
+                        return;
+                    }
+                }
+            }
             cart[index].quantity += dir;
             if (cart[index].quantity <= 0) {
                 cart.splice(index, 1);
@@ -294,6 +317,37 @@
                 </div>
             `;
 
+            // Pre-checkout stock verification
+            try {
+                const menuRes = await fetch('/api/menu');
+                const menuItems = await menuRes.json();
+                
+                for (const cartItem of cart) {
+                    const menuItem = menuItems.find(m => m.id === cartItem.id);
+                    if (!menuItem) {
+                        alert(`Item "${cartItem.name}" is no longer available on the menu.`);
+                        btn.disabled = false;
+                        btn.innerHTML = `Confirm Order <span class="material-symbols-outlined font-bold text-sm">arrow_forward</span>`;
+                        return;
+                    }
+                    const stock = menuItem.stock !== undefined ? menuItem.stock : 25;
+                    if (stock === 0) {
+                        alert(`Item "${cartItem.name}" is out of stock!`);
+                        btn.disabled = false;
+                        btn.innerHTML = `Confirm Order <span class="material-symbols-outlined font-bold text-sm">arrow_forward</span>`;
+                        return;
+                    }
+                    if (cartItem.quantity > stock) {
+                        alert(`Insufficient stock for "${cartItem.name}". Only ${stock} remaining. Please reduce your quantity.`);
+                        btn.disabled = false;
+                        btn.innerHTML = `Confirm Order <span class="material-symbols-outlined font-bold text-sm">arrow_forward</span>`;
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to pre-check stock", err);
+            }
+
             const selectedSlot = document.querySelector('input[name="timeslot"]:checked').value;
             const instructions = document.getElementById('instructions').value;
             const totalAmount = parseFloat(sessionStorage.getItem('last_order_amount'));
@@ -303,6 +357,7 @@
             const orderPayload = {
                 user_id: userSession.id,
                 user_name: userSession.name,
+                studentId: userSession.collegeId || 'CS-10245-26',
                 total_amount: totalAmount,
                 pickup_slot: selectedSlot,
                 items: cart,
@@ -331,17 +386,18 @@
                         window.location.href = '/student/orders.html';
                     }, 1200);
                 } else {
-                    throw new Error('Failed to create order');
+                    const errData = await res.json();
+                    throw new Error(errData.error || 'Failed to create order');
                 }
             } catch (err) {
                 console.error(err);
-                alert('There was a problem placing your order. Please try again.');
+                alert(err.message || 'There was a problem placing your order. Please try again.');
                 btn.disabled = false;
                 btn.innerHTML = `Confirm Order <span class="material-symbols-outlined font-bold text-sm">arrow_forward</span>`;
             }
         }
 
-        renderCart();
+        initCheckout();
     </script>
 </body>
 </html>

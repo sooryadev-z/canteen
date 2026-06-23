@@ -113,6 +113,10 @@
                 <span class="material-symbols-outlined">restaurant_menu</span>
                 <span>Menu Editor</span>
             </button>
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="w-full flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all text-left">
+                <span class="material-symbols-outlined">inventory</span>
+                <span>Inventory & Stock</span>
+            </button>
             <a class="flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all" href="/kitchen/index.html">
                 <span class="material-symbols-outlined">pending_actions</span>
                 <span>Kitchen Live Queue</span>
@@ -289,6 +293,140 @@
             </div>
         </div>
 
+        <!-- SECTION: INVENTORY MANAGEMENT -->
+        <div id="section-inventory" class="hidden space-y-8">
+            <section class="flex justify-between items-end">
+                <div>
+                    <h3 class="text-2xl font-bold text-on-surface mb-1">Inventory & Stock</h3>
+                    <p class="text-sm text-on-surface-variant">Monitor menu stock level, daily sales count, and update availability.</p>
+                </div>
+                <button onclick="resetDailySales()" class="flex items-center gap-2 bg-tertiary-container/20 text-tertiary border border-tertiary-container/30 px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-tertiary-container/30 active:scale-95 transition-all shadow-lg">
+                    <span class="material-symbols-outlined text-[18px]">refresh</span> Reset Daily Sales Count
+                </button>
+            </section>
+
+            <!-- Inventory Metric Cards (5 Cards Bento Deck) -->
+            <section class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <!-- Total Items -->
+                <div class="glass-card p-5 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="p-2.5 bg-primary/10 rounded-xl">
+                            <span class="material-symbols-outlined text-primary text-[20px]">inventory</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider font-semibold">Total Items</p>
+                    <h4 class="text-xl font-extrabold text-on-surface" id="inventory-stat-total">0</h4>
+                </div>
+                <!-- Total Stock Units -->
+                <div class="glass-card p-5 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="p-2.5 bg-blue-500/10 rounded-xl">
+                            <span class="material-symbols-outlined text-blue-450 text-[20px]">layers</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider font-semibold">Total Stock Units</p>
+                    <h4 class="text-xl font-extrabold text-on-surface" id="inventory-stat-total-units">0</h4>
+                </div>
+                <!-- Low Stock Items -->
+                <div class="glass-card p-5 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="p-2.5 bg-amber-500/10 rounded-xl">
+                            <span class="material-symbols-outlined text-amber-highlight text-[20px]">warning</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider font-semibold">Low Stock Items</p>
+                    <h4 class="text-xl font-extrabold text-amber-highlight" id="inventory-stat-low">0</h4>
+                </div>
+                <!-- Out of Stock Items -->
+                <div class="glass-card p-5 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="p-2.5 bg-red-500/10 rounded-xl">
+                            <span class="material-symbols-outlined text-tertiary text-[20px]">error</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider font-semibold">Out Of Stock Items</p>
+                    <h4 class="text-xl font-extrabold text-tertiary" id="inventory-stat-out">0</h4>
+                </div>
+                <!-- Top Selling Item -->
+                <div class="glass-card p-5 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="p-2.5 bg-emerald-500/10 rounded-xl">
+                            <span class="material-symbols-outlined text-primary-fixed text-[20px]">local_fire_department</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-on-surface-variant mb-1 uppercase tracking-wider font-semibold">Top Selling (Today)</p>
+                    <h4 class="text-lg font-extrabold text-on-surface truncate" id="inventory-stat-top">-</h4>
+                </div>
+            </section>
+
+            <!-- Bento Dashboard Grid: Table and Activity Log -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Table Column (2/3 width) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="glass-card rounded-2xl overflow-hidden border border-outline-variant/10">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-surface-container-low border-b border-outline-variant/10 text-xs font-bold text-on-surface-variant uppercase">
+                                    <th class="p-4">Item Name</th>
+                                    <th class="p-4">Price</th>
+                                    <th class="p-4">Current Stock / Threshold</th>
+                                    <th class="p-4">Sold Today</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="divide-y divide-outline-variant/10 text-xs">
+                                <!-- Inventory rows populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Activity Log & Metadata Insights Column (1/3 width) -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Activity Log Stream -->
+                    <div class="glass-card rounded-2xl p-5 border border-outline-variant/10 flex flex-col h-[380px]">
+                        <div class="flex items-center gap-2 mb-4 border-b border-outline-variant/10 pb-2">
+                            <span class="material-symbols-outlined text-primary text-sm font-bold">history</span>
+                            <h5 class="font-bold text-xs uppercase tracking-wider text-on-surface">Inventory Activity Log</h5>
+                        </div>
+                        <div id="activity-log-container" class="flex-1 overflow-y-auto space-y-3 pr-1 text-[11px] scrollbar-none">
+                            <!-- Stream of recent transaction logs -->
+                        </div>
+                    </div>
+
+                    <!-- Health & Metadata Insights -->
+                    <div class="glass-card rounded-2xl p-5 border border-outline-variant/10 space-y-4">
+                        <div class="flex items-center gap-2 border-b border-outline-variant/10 pb-2">
+                            <span class="material-symbols-outlined text-secondary text-sm font-bold">analytics</span>
+                            <h5 class="font-bold text-xs uppercase tracking-wider text-on-surface">Metadata & Analytics</h5>
+                        </div>
+                        <div class="space-y-3.5 text-xs">
+                            <div>
+                                <p class="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider">Inventory Health</p>
+                                <div class="flex items-center justify-between mt-1 gap-2">
+                                    <span class="text-[11px] text-on-surface font-semibold shrink-0" id="analytics-health-percentage">0% Fully Stocked</span>
+                                    <div class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden">
+                                        <div class="h-full bg-primary transition-all duration-500" id="analytics-health-bar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider">Recently Restocked</p>
+                                <p class="text-on-surface text-[11px] font-semibold mt-0.5 truncate" id="analytics-last-restocked-info">-</p>
+                            </div>
+                            <div>
+                                <p class="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider">Stale / Needs Restock</p>
+                                <div id="analytics-stale-items" class="space-y-1.5 mt-1.5 max-h-24 overflow-y-auto pr-1">
+                                    <!-- Items not restocked recently -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL: ADD NEW ITEM -->
         <div id="modal-new-item" class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-black/60 backdrop-blur-sm p-4">
             <div class="glass-card w-full max-w-md p-6 rounded-2xl border border-outline-variant/20 shadow-2xl relative">
@@ -347,11 +485,13 @@
         let allMenu = [];
         let allOrders = [];
         let allFeedback = [];
+        let allLogs = [];
         let currentTab = 'overview';
         let firebaseConfig = null;
         let unsubscribeMenu = null;
         let unsubscribeOrders = null;
         let unsubscribeFeedback = null;
+        let unsubscribeLogs = null;
         let pollingInterval = null;
 
         // Check login session
@@ -366,17 +506,26 @@
             
             document.getElementById('tab-overview').className = "w-full flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all text-left";
             document.getElementById('tab-menu').className = "w-full flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all text-left";
+            document.getElementById('tab-inventory').className = "w-full flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all text-left";
             
             document.getElementById(`tab-${tab}`).className = "w-full flex items-center gap-3 px-6 py-4 sidebar-active transition-colors text-left";
             
             if (tab === 'overview') {
                 document.getElementById('section-overview').classList.remove('hidden');
                 document.getElementById('section-menu').classList.add('hidden');
+                document.getElementById('section-inventory').classList.add('hidden');
                 document.getElementById('header-title').textContent = 'Canteen Dashboard';
-            } else {
+            } else if (tab === 'menu') {
                 document.getElementById('section-overview').classList.add('hidden');
                 document.getElementById('section-menu').classList.remove('hidden');
+                document.getElementById('section-inventory').classList.add('hidden');
                 document.getElementById('header-title').textContent = 'Menu Editor';
+            } else if (tab === 'inventory') {
+                document.getElementById('section-overview').classList.add('hidden');
+                document.getElementById('section-menu').classList.add('hidden');
+                document.getElementById('section-inventory').classList.remove('hidden');
+                document.getElementById('header-title').textContent = 'Inventory Control';
+                renderInventory();
             }
         }
 
@@ -394,6 +543,15 @@
                 // Feedback
                 const feedbackRes = await fetch('/api/feedback');
                 allFeedback = await feedbackRes.json();
+
+                // Logs
+                try {
+                    const logsRes = await fetch('/api/inventory/logs');
+                    allLogs = await logsRes.json();
+                    renderLogs(allLogs);
+                } catch (logErr) {
+                    console.error("Error fetching logs fallback:", logErr);
+                }
 
                 renderDashboard();
             } catch (err) {
@@ -426,6 +584,8 @@
             
             topRatedList.innerHTML = sortedMenu.slice(0, 3).map((item, idx) => {
                 const percentage = Math.min((item.orders_count / 250) * 100, 100);
+                const stock = item.stock !== undefined ? item.stock : 25;
+                const status = item.status || (stock === 0 ? 'Out Of Stock' : 'Available');
                 return `
                     <div class="flex items-center gap-6 p-4 rounded-xl hover:bg-surface-variant/10 transition-all border border-transparent hover:border-outline-variant/20 group">
                         <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-surface-container">
@@ -443,7 +603,7 @@
                             <div class="w-24 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
                                 <div class="h-full bg-primary rounded-full" style="width: ${percentage}%"></div>
                             </div>
-                            <p class="text-[9px] text-on-surface-variant mt-1">Inventory: ${item.is_available ? 'High' : 'Sold Out'}</p>
+                            <p class="text-[9px] text-on-surface-variant mt-1">Inventory: ${stock} (${status})</p>
                         </div>
                     </div>
                 `;
@@ -451,6 +611,11 @@
 
             // Render Menu Editor Table
             renderMenuTable();
+
+            // Render Inventory Table & metrics if currently viewed
+            if (currentTab === 'inventory') {
+                renderInventory();
+            }
         }
 
         // Render Table list inside Menu Editor
@@ -703,9 +868,331 @@
                     console.error("Feedback onSnapshot error:", error);
                 });
 
+                // 4. Listen to inventory logs
+                unsubscribeLogs = onSnapshot(collection(db, 'inventory_logs'), (snapshot) => {
+                    allLogs = [];
+                    snapshot.forEach((doc) => {
+                        allLogs.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    renderLogs(allLogs.slice(0, 50));
+                }, (error) => {
+                    console.error("Logs onSnapshot error:", error);
+                });
+
             } catch (err) {
                 console.error("Failed to initialize Firebase SDK, falling back to HTTP polling:", err);
                 startPolling();
+            }
+        }
+
+        function formatTime(isoString) {
+            if (!isoString) return '';
+            const date = new Date(isoString);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderLogs(logs) {
+            const container = document.getElementById('activity-log-container');
+            if (!container) return;
+            
+            if (logs.length === 0) {
+                container.innerHTML = `<div class="text-on-surface-variant text-center py-8">No inventory activity logged yet.</div>`;
+                return;
+            }
+            
+            container.innerHTML = logs.slice(0, 50).map(log => {
+                let badgeColor = 'bg-surface-container text-on-surface-variant';
+                let actionIcon = 'info';
+                let actionText = log.action;
+                let qtyText = '';
+                
+                if (log.quantityChanged !== undefined) {
+                    qtyText = log.quantityChanged > 0 ? `+${log.quantityChanged}` : `${log.quantityChanged}`;
+                }
+                
+                if (log.action === 'AUTO_DEDUCTION') {
+                    badgeColor = 'bg-red-500/10 text-red-400 border border-red-500/20';
+                    actionIcon = 'shopping_cart';
+                    actionText = 'Auto Deduct';
+                } else if (log.action === 'ADD_STOCK') {
+                    badgeColor = 'bg-primary/10 text-primary border border-primary/20';
+                    actionIcon = 'add_circle';
+                    actionText = 'Restock';
+                } else if (log.action === 'REDUCE_STOCK') {
+                    badgeColor = 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+                    actionIcon = 'remove_circle';
+                    actionText = 'Reduce';
+                } else if (log.action === 'SET_STOCK') {
+                    badgeColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+                    actionIcon = 'edit_note';
+                    actionText = 'Manual Set';
+                }
+                
+                const timeStr = formatTime(log.timestamp);
+                
+                return `
+                    <div class="flex items-start gap-3 p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:border-outline-variant/30 transition-all">
+                        <div class="p-1.5 rounded-lg ${badgeColor} shrink-0">
+                            <span class="material-symbols-outlined text-[14px]">${actionIcon}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start gap-1">
+                                <p class="font-bold text-on-surface truncate">${log.itemName}</p>
+                                <span class="font-mono text-[10px] font-bold ${log.quantityChanged > 0 ? 'text-primary' : 'text-tertiary'} shrink-0">${qtyText}</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-1 text-[9px] text-on-surface-variant">
+                                <span>${actionText} by <span class="font-semibold text-on-surface">${log.performedBy || log.updatedBy || 'System'}</span></span>
+                                <span class="shrink-0 font-medium">${timeStr}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderInventory() {
+            const tableBody = document.getElementById('inventory-table-body');
+            if (!tableBody) return;
+
+            const searchVal = document.getElementById('admin-search').value.toLowerCase();
+            
+            const filtered = allMenu.filter(item => {
+                return item.name.toLowerCase().includes(searchVal) ||
+                       item.category.toLowerCase().includes(searchVal);
+            });
+
+            // 1. Calculate and update metrics
+            let lowStockCount = 0;
+            let outOfStockCount = 0;
+            let totalStockUnits = 0;
+            let topSellingItem = null;
+            let maxSales = -1;
+
+            allMenu.forEach(item => {
+                const stock = item.stock !== undefined ? item.stock : 25;
+                const threshold = item.lowStockThreshold !== undefined ? item.lowStockThreshold : 5;
+                const sold = item.soldToday !== undefined ? item.soldToday : 0;
+                
+                totalStockUnits += stock;
+
+                if (stock === 0) {
+                    outOfStockCount++;
+                } else if (stock <= threshold) {
+                    lowStockCount++;
+                }
+                
+                if (sold > maxSales && sold > 0) {
+                    maxSales = sold;
+                    topSellingItem = item;
+                }
+            });
+
+            const totalEl = document.getElementById('inventory-stat-total');
+            const lowEl = document.getElementById('inventory-stat-low');
+            const outEl = document.getElementById('inventory-stat-out');
+            const topEl = document.getElementById('inventory-stat-top');
+            const totalUnitsEl = document.getElementById('inventory-stat-total-units');
+
+            if (totalEl) totalEl.textContent = allMenu.length;
+            if (lowEl) lowEl.textContent = lowStockCount;
+            if (outEl) outEl.textContent = outOfStockCount;
+            if (totalUnitsEl) totalUnitsEl.textContent = totalStockUnits;
+            if (topEl) {
+                topEl.textContent = topSellingItem 
+                    ? `${topSellingItem.name} (${topSellingItem.soldToday || 0})` 
+                    : 'None';
+            }
+
+            // 2. Render table with inline inputs
+            tableBody.innerHTML = filtered.map(item => {
+                const stock = item.stock !== undefined ? item.stock : 25;
+                const threshold = item.lowStockThreshold !== undefined ? item.lowStockThreshold : 5;
+                const sold = item.soldToday !== undefined ? item.soldToday : 0;
+                
+                let statusBadge = '';
+                if (stock === 0) {
+                    statusBadge = `<span class="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded text-[10px] font-bold">OUT OF STOCK</span>`;
+                } else if (stock <= threshold) {
+                    statusBadge = `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold">LOW STOCK</span>`;
+                } else {
+                    statusBadge = `<span class="bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded text-[10px] font-bold">AVAILABLE</span>`;
+                }
+
+                return `
+                    <tr class="hover:bg-surface-variant/5">
+                        <td class="p-4 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded overflow-hidden shrink-0 bg-surface-container">
+                                <img src="${item.image_url}" class="w-full h-full object-cover" alt=""/>
+                            </div>
+                            <span class="font-bold text-on-surface">${item.name}</span>
+                        </td>
+                        <td class="p-4 text-on-surface font-extrabold">₹${item.price.toFixed(2)}</td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-4">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-[9px] text-on-surface-variant uppercase font-bold">Stock</span>
+                                    <div class="flex items-center gap-1">
+                                        <button onclick="changeStockInputVal(${item.id}, -10)" class="w-6 h-6 rounded bg-surface-container flex items-center justify-center hover:bg-surface-variant text-tertiary font-bold text-xs" title="Reduce 10">-10</button>
+                                        <input type="number" id="stock-input-${item.id}" value="${stock}" min="0" class="w-14 bg-surface-container border border-outline-variant/20 rounded px-1.5 py-0.5 text-center text-xs text-white focus:outline-none focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                                        <button onclick="changeStockInputVal(${item.id}, 10)" class="w-6 h-6 rounded bg-surface-container flex items-center justify-center hover:bg-surface-variant text-primary font-bold text-xs" title="Add 10">+10</button>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-[9px] text-on-surface-variant uppercase font-bold">Threshold</span>
+                                    <input type="number" id="threshold-input-${item.id}" value="${threshold}" min="0" class="w-12 bg-surface-container border border-outline-variant/20 rounded px-1.5 py-0.5 text-center text-xs text-white focus:outline-none focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4 text-on-surface-variant font-semibold">${sold}</td>
+                        <td class="p-4">${statusBadge}</td>
+                        <td class="p-4 text-right">
+                            <button id="save-btn-${item.id}" onclick="saveStockChanges(${item.id})" class="px-3 py-1.5 bg-primary text-on-primary rounded-xl font-bold hover:brightness-110 active:scale-[0.97] transition-all flex items-center gap-1 ml-auto text-[11px] shadow-sm shadow-primary/20">
+                                <span class="material-symbols-outlined text-[14px]">save</span> Save
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 3. Render Logs Stream
+            renderLogs(allLogs);
+
+            // 4. Render Metadata Insights (Health, Last Restocked, Stale Items)
+            const fullyStockedCount = allMenu.filter(item => {
+                const stock = item.stock !== undefined ? item.stock : 25;
+                const threshold = item.lowStockThreshold !== undefined ? item.lowStockThreshold : 5;
+                return stock > threshold;
+            }).length;
+            const healthPercentage = allMenu.length > 0 ? Math.round((fullyStockedCount / allMenu.length) * 100) : 0;
+            
+            const healthPctEl = document.getElementById('analytics-health-percentage');
+            const healthBarEl = document.getElementById('analytics-health-bar');
+            if (healthPctEl) healthPctEl.textContent = `${healthPercentage}% Fully Stocked`;
+            if (healthBarEl) healthBarEl.style.width = `${healthPercentage}%`;
+
+            const restockedItems = allMenu.filter(item => item.lastRestockedAt).sort((a, b) => new Date(b.lastRestockedAt) - new Date(a.lastRestockedAt));
+            const lastRestocked = restockedItems[0];
+            const lastRestockedEl = document.getElementById('analytics-last-restocked-info');
+            if (lastRestockedEl) {
+                if (lastRestocked) {
+                    const restockDate = new Date(lastRestocked.lastRestockedAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
+                    const restockTime = new Date(lastRestocked.lastRestockedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    lastRestockedEl.textContent = `${lastRestocked.name} by ${lastRestocked.lastRestockedBy || 'Admin'} on ${restockDate} ${restockTime}`;
+                } else {
+                    lastRestockedEl.textContent = 'No restocks recorded yet';
+                }
+            }
+
+            const staleContainer = document.getElementById('analytics-stale-items');
+            if (staleContainer) {
+                const staleItems = allMenu.filter(item => {
+                    const stock = item.stock !== undefined ? item.stock : 25;
+                    const threshold = item.lowStockThreshold !== undefined ? item.lowStockThreshold : 5;
+                    return stock <= threshold;
+                });
+                
+                if (staleItems.length === 0) {
+                    staleContainer.innerHTML = `<p class="text-on-surface-variant text-[11px]">All items healthy!</p>`;
+                } else {
+                    staleContainer.innerHTML = staleItems.map(item => {
+                        const stock = item.stock !== undefined ? item.stock : 25;
+                        const isOut = stock === 0;
+                        const badgeColor = isOut ? 'text-red-400 bg-red-500/10 border border-red-500/20' : 'text-amber-400 bg-amber-500/10 border border-amber-550/20';
+                        const actionText = isOut ? 'OUT' : `${stock} left`;
+                        return `
+                            <div class="flex items-center justify-between p-1.5 bg-surface-container rounded-lg border border-outline-variant/10 text-[11px]">
+                                <span class="font-bold text-on-surface truncate pr-2 max-w-[120px]">${item.name}</span>
+                                <span class="px-2 py-0.5 rounded font-mono font-bold text-[9px] uppercase tracking-wider ${badgeColor}">${actionText}</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        function changeStockInputVal(itemId, amount) {
+            const input = document.getElementById(`stock-input-${itemId}`);
+            if (input) {
+                let current = parseInt(input.value) || 0;
+                input.value = Math.max(0, current + amount);
+            }
+        }
+
+        async function saveStockChanges(itemId) {
+            const stockInput = document.getElementById(`stock-input-${itemId}`);
+            const thresholdInput = document.getElementById(`threshold-input-${itemId}`);
+            const saveBtn = document.getElementById(`save-btn-${itemId}`);
+            
+            if (!stockInput || !thresholdInput) return;
+            
+            const stockVal = parseInt(stockInput.value);
+            const thresholdVal = parseInt(thresholdInput.value);
+            
+            if (isNaN(stockVal) || stockVal < 0) {
+                alert("Please enter a valid stock level (>= 0).");
+                return;
+            }
+            if (isNaN(thresholdVal) || thresholdVal < 0) {
+                alert("Please enter a valid threshold (>= 0).");
+                return;
+            }
+            
+            // Set loading state on the button
+            const originalContent = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<span class="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>`;
+            
+            // Identify logged in user
+            const loggedInUser = JSON.parse(sessionStorage.getItem('user'));
+            const adminName = loggedInUser ? loggedInUser.name : 'Admin';
+            
+            try {
+                const res = await fetch(`/api/menu/${itemId}/set-stock`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        stock: stockVal,
+                        lowStockThreshold: thresholdVal,
+                        performedBy: adminName
+                    })
+                });
+                
+                if (res.ok) {
+                    saveBtn.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">check_circle</span>`;
+                    setTimeout(() => {
+                        saveBtn.innerHTML = originalContent;
+                        saveBtn.disabled = false;
+                        refreshDashboard();
+                    }, 1000);
+                } else {
+                    const errData = await res.json();
+                    alert(`Failed to save changes: ${errData.error || 'Server error'}`);
+                    saveBtn.innerHTML = originalContent;
+                    saveBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error("Error saving stock changes:", err);
+                alert("Network error saving stock changes.");
+                saveBtn.innerHTML = originalContent;
+                saveBtn.disabled = false;
+            }
+        }
+
+        async function resetDailySales() {
+            if (!confirm("Are you sure you want to reset today's sales count for all items?")) return;
+            try {
+                const res = await fetch('/api/menu/reset-sales', {
+                    method: 'POST'
+                });
+                if (res.ok) {
+                    refreshDashboard();
+                }
+            } catch (err) {
+                console.error(err);
             }
         }
 
@@ -731,12 +1218,17 @@
         window.searchItems = searchItems;
         window.generateAISummary = generateAISummary;
         window.loadAISummary = loadAISummary;
+        window.resetDailySales = resetDailySales;
+        window.renderInventory = renderInventory;
+        window.changeStockInputVal = changeStockInputVal;
+        window.saveStockChanges = saveStockChanges;
 
         // Cleanup
         window.addEventListener('beforeunload', () => {
             if (unsubscribeMenu) unsubscribeMenu();
             if (unsubscribeOrders) unsubscribeOrders();
             if (unsubscribeFeedback) unsubscribeFeedback();
+            if (unsubscribeLogs) unsubscribeLogs();
             if (pollingInterval) clearInterval(pollingInterval);
         });
 

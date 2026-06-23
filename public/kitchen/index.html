@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link href="/css/styles.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -109,6 +110,10 @@
                 <span class="material-symbols-outlined filled-icon" style="font-variation-settings: 'FILL' 1;">pending_actions</span>
                 <span>Live Orders</span>
             </a>
+            <button onclick="toggleQRScannerModal(true)" class="w-full flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all text-left">
+                <span class="material-symbols-outlined">qr_code_scanner</span>
+                <span>Scan Order QR</span>
+            </button>
             <a class="flex items-center gap-3 px-6 py-4 text-on-surface-variant hover:bg-surface-variant/20 transition-all" href="/admin/index.html">
                 <span class="material-symbols-outlined">analytics</span>
                 <span>Admin View</span>
@@ -269,8 +274,8 @@
             const readyCol = document.getElementById('ready-column');
             const searchVal = document.getElementById('search-queue').value.toLowerCase();
 
-            // Filter active orders (excluding completed)
-            const activeOrders = allOrders.filter(o => o.status !== 'Completed');
+            // Filter active orders (excluding Completed & Handed Over)
+            const activeOrders = allOrders.filter(o => o.status !== 'Completed' && o.status !== 'Handed Over');
             
             // Apply search
             const filteredOrders = activeOrders.filter(o => {
@@ -461,9 +466,154 @@
             pollingInterval = setInterval(fetchQueue, 3000);
         }
 
+        let html5QrcodeScanner = null;
+
+        async function toggleQRScannerModal(show) {
+            const modal = document.getElementById('qr-scanner-modal');
+            if (!modal) {
+                const newModal = document.createElement('div');
+                newModal.id = 'qr-scanner-modal';
+                newModal.className = 'fixed inset-0 z-[100] flex items-center justify-center hidden bg-black/85 backdrop-blur-sm p-4';
+                newModal.innerHTML = `
+                    <div class="bg-surface-container-low border border-outline-variant/20 rounded-3xl p-6 max-w-md w-full relative flex flex-col items-center gap-4 text-center shadow-2xl animate-fade-in-up">
+                        <button onclick="toggleQRScannerModal(false)" class="absolute top-4 right-4 text-on-surface-variant hover:text-white transition-colors">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                        <h3 class="text-base font-bold text-primary flex items-center gap-2">
+                            <span class="material-symbols-outlined">qr_code_scanner</span>
+                            Scan Order QR Code
+                        </h3>
+                        <p class="text-xs text-on-surface-variant">Hold the student's pre-order QR code in front of your camera.</p>
+                        
+                        <div class="w-full aspect-square bg-black rounded-2xl overflow-hidden border-2 border-outline-variant/30 relative flex items-center justify-center">
+                            <div id="reader" class="w-full h-full"></div>
+                        </div>
+                        
+                        <div id="scanner-result" class="text-xs font-semibold py-2 px-4 rounded-xl hidden w-full"></div>
+                    </div>
+                `;
+                document.body.appendChild(newModal);
+            }
+
+            const modalEl = document.getElementById('qr-scanner-modal');
+            const resultEl = document.getElementById('scanner-result');
+
+            if (show) {
+                modalEl.classList.remove('hidden');
+                if (resultEl) {
+                    resultEl.classList.add('hidden');
+                    resultEl.textContent = '';
+                }
+                startScanner();
+            } else {
+                modalEl.classList.add('hidden');
+                stopScanner();
+            }
+        }
+
+        function startScanner() {
+            const resultEl = document.getElementById('scanner-result');
+            
+            // Clear any old reader wrapper instance just in case
+            if (html5QrcodeScanner) {
+                stopScanner();
+            }
+
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            
+            const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
+                // Immediately stop scanning to avoid duplicate frames
+                try {
+                    await html5QrcodeScanner.stop();
+                } catch(e) {}
+                
+                resultEl.className = "text-xs font-semibold py-2.5 px-4 rounded-xl bg-primary/20 text-primary border border-primary/30 w-full";
+                resultEl.innerHTML = `<span class="animate-pulse">Validating QR code...</span>`;
+                resultEl.classList.remove('hidden');
+
+                try {
+                    const data = JSON.parse(decodedText);
+                    if (!data.orderId || !data.token) {
+                        throw new Error("Invalid QR data format");
+                    }
+
+                    // Call API to complete order (Handed Over status) with QR payload validation
+                    const res = await fetch(`/api/orders/${data.orderId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            status: 'Handed Over',
+                            qrPayload: data
+                        })
+                    });
+
+                    if (res.ok) {
+                        resultEl.className = "text-xs font-bold py-2.5 px-4 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 w-full flex items-center justify-center gap-1.5";
+                        resultEl.innerHTML = `<span class="material-symbols-outlined text-[16px] font-bold">check_circle</span> Order ${data.token} Handed Over!`;
+                        
+                        // Sync order locally immediately if not using live listener
+                        if (!unsubscribeOrders) {
+                            fetchQueue();
+                        }
+
+                        // Auto close modal after 1.5 seconds
+                        setTimeout(() => {
+                            toggleQRScannerModal(false);
+                        }, 1500);
+                    } else {
+                        const errData = await res.json();
+                        throw new Error(errData.error || "Failed to update order status");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    resultEl.className = "text-xs font-bold py-2.5 px-4 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 w-full flex items-center justify-center gap-1.5";
+                    let errMsg = err.message || "Error validating QR code";
+                    if (errMsg.includes("Order Already Handed Over")) {
+                        errMsg = "Order Already Handed Over";
+                    }
+                    resultEl.innerHTML = `<span class="material-symbols-outlined text-[16px] font-bold">error</span> ${errMsg}`;
+                    
+                    // Restart scanner after 3 seconds so chef can scan again
+                    setTimeout(() => {
+                        resultEl.classList.add('hidden');
+                        startScanner();
+                    }, 3000);
+                }
+            };
+
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                config,
+                qrCodeSuccessCallback,
+                (errorMessage) => {
+                    // Ignore verbose frame-by-frame scanner failures
+                }
+            ).catch((err) => {
+                console.error("Failed to start Html5Qrcode scanner", err);
+                resultEl.className = "text-xs font-bold py-2.5 px-4 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 w-full";
+                resultEl.textContent = "Camera access error. Please grant permissions.";
+                resultEl.classList.remove('hidden');
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    console.log("Scanner stopped.");
+                    html5QrcodeScanner = null;
+                }).catch((err) => {
+                    console.warn("Error stopping scanner", err);
+                    html5QrcodeScanner = null;
+                });
+            }
+        }
+
         // Bind functions to window so they are globally accessible from HTML event handlers
         window.updateOrderStatus = updateOrderStatus;
         window.renderColumns = renderColumns;
+        window.toggleQRScannerModal = toggleQRScannerModal;
 
         // Cleanup listener on unmount / page unload
         window.addEventListener('beforeunload', () => {
@@ -473,6 +623,7 @@
             if (pollingInterval) {
                 clearInterval(pollingInterval);
             }
+            stopScanner();
         });
 
         // Initial load

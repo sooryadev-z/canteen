@@ -73,18 +73,31 @@ app.post('/api/menu', async (req, res) => {
     snapshot.forEach(doc => ids.push(Number(doc.id)));
     const nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
 
+    const stock = req.body.stock !== undefined ? parseInt(req.body.stock) : 25;
+    const lowStockThreshold = req.body.lowStockThreshold !== undefined ? parseInt(req.body.lowStockThreshold) : 5;
+    let status = 'Available';
+    if (stock === 0) {
+      status = 'Out Of Stock';
+    } else if (stock <= lowStockThreshold) {
+      status = 'Low Stock';
+    }
+
     const newItem = {
       id: nextId,
       name: req.body.name,
       category: req.body.category || 'Lunch',
       price: parseFloat(req.body.price),
       is_veg: req.body.is_veg === undefined ? true : req.body.is_veg,
-      is_available: req.body.is_available === undefined ? true : req.body.is_available,
+      is_available: stock > 0,
       image_url: req.body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500',
       prep_time: req.body.prep_time || '10m',
       back_time: req.body.back_time || '',
       rating: 5.0,
-      orders_count: 0
+      orders_count: 0,
+      stock: stock,
+      lowStockThreshold: lowStockThreshold,
+      soldToday: 0,
+      status: status
     };
 
     const { id, ...bodyWithoutId } = newItem;
@@ -171,6 +184,11 @@ app.post('/api/orders', async (req, res) => {
     return res.status(500).json({ error: "Firebase not configured. Exclusive Firestore mode is enabled." });
   }
 
+  const orderItems = req.body.items || [];
+  if (orderItems.length === 0) {
+    return res.status(400).json({ error: "Cart is empty" });
+  }
+
   try {
     const snapshot = await firestoreDb.collection('orders').get();
     const ids = [];
@@ -178,7 +196,9 @@ app.post('/api/orders', async (req, res) => {
     const nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
 
     const tokenNum = `#SC-${Math.floor(100 + Math.random() * 900)}`;
+    const studentId = req.body.studentId || 'CS-10245-26';
 
+    const timestamp = new Date().toISOString();
     const newOrder = {
       id: nextId,
       user_id: req.body.user_id || 1,
@@ -187,32 +207,107 @@ app.post('/api/orders', async (req, res) => {
       pickup_slot: req.body.pickup_slot || '12:30 - 12:45',
       status: 'Pending',
       token_number: tokenNum,
-      items: req.body.items || [],
+      items: orderItems,
       special_instructions: req.body.special_instructions || '',
-      created_at: new Date().toISOString()
+      created_at: timestamp,
+      
+      // Persistent QR Payload Storage
+      qrPayload: {
+        orderId: String(nextId),
+        tokenNumber: tokenNum,
+        studentId: studentId
+      },
+      
+      // Enhanced Order Timeline Tracking
+      pendingAt: timestamp,
+      preparingAt: null,
+      readyAt: null,
+      handedOverAt: null
     };
 
-    // Increment order count for items in Firestore
-    for (const orderItem of newOrder.items) {
-      const menuItemId = orderItem.id;
-      try {
-        const itemDocRef = firestoreDb.collection('menu_items').doc(String(menuItemId));
-        const itemDoc = await itemDocRef.get();
-        if (itemDoc.exists) {
-          const currentCount = itemDoc.data().orders_count || 0;
-          await itemDocRef.update({ orders_count: currentCount + (orderItem.quantity || 1) });
+    // Use a Firestore Transaction to validate stock and update menu_items & create order
+    await firestoreDb.runTransaction(async (transaction) => {
+      // 1. Read all required menu items first
+      const itemDocs = [];
+      for (const orderItem of orderItems) {
+        const itemRef = firestoreDb.collection('menu_items').doc(String(orderItem.id));
+        const itemDoc = await transaction.get(itemRef);
+        if (!itemDoc.exists) {
+          throw new Error(`Item "${orderItem.name}" not found in menu`);
         }
-      } catch (e) {
-        console.error("Error updating menu item order count in Firestore:", e);
+        itemDocs.push({ ref: itemRef, doc: itemDoc, orderItem });
       }
-    }
 
-    const { id, ...bodyWithoutId } = newOrder;
-    await firestoreDb.collection('orders').doc(String(newOrder.id)).set(bodyWithoutId);
+      // 2. Validate stock for all items
+      for (const { doc, orderItem } of itemDocs) {
+        const data = doc.data();
+        const currentStock = data.stock !== undefined ? data.stock : 25; // fallback default
+        const reqQty = orderItem.quantity || 1;
+        
+        if (currentStock <= 0) {
+          throw new Error(`Item "${orderItem.name}" is out of stock`);
+        }
+        if (reqQty > currentStock) {
+          throw new Error(`Insufficient stock for "${orderItem.name}". Only ${currentStock} remaining`);
+        }
+      }
+
+      // 3. Deduct stock, increment soldToday, update lastUpdated, log actions
+      for (const { ref, doc, orderItem } of itemDocs) {
+        const data = doc.data();
+        const reqQty = orderItem.quantity || 1;
+        const currentStock = data.stock !== undefined ? data.stock : 25;
+        const currentSoldToday = data.soldToday !== undefined ? data.soldToday : 0;
+        const lowThreshold = data.lowStockThreshold !== undefined ? data.lowStockThreshold : 5;
+        
+        const newStock = currentStock - reqQty;
+        const newSoldToday = currentSoldToday + reqQty;
+        
+        let newStatus = 'Available';
+        if (newStock === 0) {
+          newStatus = 'Out Of Stock';
+        } else if (newStock <= lowThreshold) {
+          newStatus = 'Low Stock';
+        }
+
+        const currentOrdersCount = data.orders_count || 0;
+
+        // Update menu item
+        transaction.update(ref, {
+          stock: newStock,
+          soldToday: newSoldToday,
+          status: newStatus,
+          orders_count: currentOrdersCount + reqQty,
+          is_available: newStock > 0,
+          lastUpdated: timestamp
+        });
+
+        // Write inventory log atomically inside same transaction
+        const logRef = firestoreDb.collection('inventory_logs').doc();
+        transaction.set(logRef, {
+          itemId: Number(orderItem.id),
+          itemName: orderItem.name,
+          action: 'AUTO_DEDUCTION',
+          quantity: reqQty,
+          quantityChanged: -reqQty,
+          previousStock: currentStock,
+          newStock: newStock,
+          performedBy: req.body.user_name || 'Student Checkout',
+          updatedBy: req.body.user_name || 'Student Checkout',
+          timestamp: timestamp
+        });
+      }
+
+      // 4. Create the order
+      const orderRef = firestoreDb.collection('orders').doc(String(newOrder.id));
+      const { id, ...bodyWithoutId } = newOrder;
+      transaction.set(orderRef, bodyWithoutId);
+    });
+
     res.status(201).json(newOrder);
   } catch (e) {
-    console.error("Failed to save order to Firestore:", e);
-    res.status(500).json({ error: "Failed to place order in Firestore" });
+    console.error("Failed to place order via transaction:", e);
+    res.status(400).json({ error: e.message || "Failed to place order in Firestore" });
   }
 });
 
@@ -223,24 +318,255 @@ app.put('/api/orders/:id', async (req, res) => {
   }
 
   const id = parseInt(req.params.id);
+  const newStatus = req.body.status;
   try {
-    const docSnap = await firestoreDb.collection('orders').doc(String(id)).get();
-    if (!docSnap.exists) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
+    const orderRef = firestoreDb.collection('orders').doc(String(id));
+    let updatedOrder = null;
 
-    const order = { id, ...docSnap.data() };
-    const updatedOrder = {
-      ...order,
-      status: req.body.status // Pending, Preparing, Ready, Completed
-    };
+    await firestoreDb.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(orderRef);
+      if (!docSnap.exists) {
+        throw new Error('Order not found');
+      }
 
-    const { id: _, ...bodyWithoutId } = updatedOrder;
-    await firestoreDb.collection('orders').doc(String(id)).set(bodyWithoutId);
+      const currentData = docSnap.data();
+      const currentStatus = currentData.status;
+
+      // 1. Scanner QR validation (if payload is provided in request)
+      if (req.body.qrPayload) {
+        const scanned = req.body.qrPayload;
+        const stored = currentData.qrPayload;
+        if (!stored ||
+            String(stored.orderId) !== String(scanned.orderId) ||
+            stored.tokenNumber !== scanned.token ||
+            stored.studentId !== scanned.studentId) {
+          throw new Error('Invalid QR Code Payload');
+        }
+      }
+
+      if (newStatus === 'Handed Over' && (currentStatus === 'Handed Over' || currentStatus === 'Completed')) {
+        throw new Error('Order Already Handed Over');
+      }
+
+      const timestamp = new Date().toISOString();
+      updatedOrder = {
+        ...currentData,
+        id,
+        status: newStatus
+      };
+
+      // 2. Lifecycle timeline tracking
+      if (newStatus === 'Preparing') {
+        updatedOrder.preparingAt = timestamp;
+      } else if (newStatus === 'Ready') {
+        updatedOrder.readyAt = timestamp;
+      } else if (newStatus === 'Handed Over' || newStatus === 'Completed') {
+        updatedOrder.status = 'Handed Over';
+        updatedOrder.handedOverAt = timestamp;
+      }
+
+      const { id: _, ...bodyWithoutId } = updatedOrder;
+      transaction.set(orderRef, bodyWithoutId);
+    });
+
     res.json(updatedOrder);
   } catch (e) {
     console.error("Failed to update order in Firestore:", e);
-    res.status(500).json({ error: "Failed to update order in Firestore" });
+    if (e.message === 'Order Already Handed Over' || e.message === 'Invalid QR Code Payload') {
+      res.status(400).json({ error: e.message });
+    } else {
+      res.status(500).json({ error: e.message || "Failed to update order in Firestore" });
+    }
+  }
+});
+
+// ==========================================
+// INVENTORY & STOCK MANAGEMENT API ENDPOINTS
+// ==========================================
+
+// Adjust Stock (Add/Reduce relative)
+app.post('/api/menu/:id/adjust-stock', async (req, res) => {
+  if (!isFirebaseConfigured || !firestoreDb) {
+    return res.status(500).json({ error: "Firebase not configured." });
+  }
+
+  const id = parseInt(req.params.id);
+  const amount = parseInt(req.body.amount);
+  const performedBy = req.body.performedBy || 'Admin';
+  if (isNaN(amount)) {
+    return res.status(400).json({ error: 'Invalid amount' });
+  }
+
+  try {
+    const docRef = firestoreDb.collection('menu_items').doc(String(id));
+    await firestoreDb.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      if (!doc.exists) {
+        throw new Error('Menu item not found');
+      }
+      const data = doc.data();
+      const currentStock = data.stock !== undefined ? data.stock : 25;
+      const lowThreshold = data.lowStockThreshold !== undefined ? data.lowStockThreshold : 5;
+      
+      const newStock = Math.max(0, currentStock + amount);
+      let newStatus = 'Available';
+      if (newStock === 0) {
+        newStatus = 'Out Of Stock';
+      } else if (newStock <= lowThreshold) {
+        newStatus = 'Low Stock';
+      }
+      
+      const timestamp = new Date().toISOString();
+      const updates = {
+        stock: newStock,
+        status: newStatus,
+        is_available: newStock > 0,
+        lastUpdated: timestamp
+      };
+
+      if (amount > 0) {
+        updates.lastRestockedAt = timestamp;
+        updates.lastRestockedBy = performedBy;
+      }
+
+      transaction.update(docRef, updates);
+
+      // Write inventory log atomically inside same transaction
+      const logRef = firestoreDb.collection('inventory_logs').doc();
+      transaction.set(logRef, {
+        itemId: id,
+        itemName: data.name,
+        action: amount > 0 ? 'ADD_STOCK' : 'REDUCE_STOCK',
+        quantity: Math.abs(amount),
+        quantityChanged: amount,
+        previousStock: currentStock,
+        newStock: newStock,
+        performedBy: performedBy,
+        updatedBy: performedBy,
+        timestamp: timestamp
+      });
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to adjust stock:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Manual Stock & Threshold Update
+app.post('/api/menu/:id/set-stock', async (req, res) => {
+  if (!isFirebaseConfigured || !firestoreDb) {
+    return res.status(500).json({ error: "Firebase not configured." });
+  }
+
+  const id = parseInt(req.params.id);
+  const stock = parseInt(req.body.stock);
+  const lowStockThreshold = req.body.lowStockThreshold !== undefined ? parseInt(req.body.lowStockThreshold) : undefined;
+  const performedBy = req.body.performedBy || 'Admin';
+  if (isNaN(stock) || stock < 0) {
+    return res.status(400).json({ error: 'Invalid stock value' });
+  }
+
+  try {
+    const docRef = firestoreDb.collection('menu_items').doc(String(id));
+    await firestoreDb.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      if (!doc.exists) {
+        throw new Error('Menu item not found');
+      }
+      const data = doc.data();
+      const finalLowThreshold = lowStockThreshold !== undefined ? lowStockThreshold : (data.lowStockThreshold !== undefined ? data.lowStockThreshold : 5);
+      
+      let newStatus = 'Available';
+      if (stock === 0) {
+        newStatus = 'Out Of Stock';
+      } else if (stock <= finalLowThreshold) {
+        newStatus = 'Low Stock';
+      }
+      
+      const timestamp = new Date().toISOString();
+      const updates = {
+        stock: stock,
+        status: newStatus,
+        is_available: stock > 0,
+        lastUpdated: timestamp
+      };
+      if (lowStockThreshold !== undefined) {
+        updates.lowStockThreshold = finalLowThreshold;
+      }
+
+      const previousStock = data.stock !== undefined ? data.stock : 25;
+      const stockDiff = stock - previousStock;
+      
+      // Update restock metadata if stock was increased or manual setting restocked it
+      if (stockDiff > 0) {
+        updates.lastRestockedAt = timestamp;
+        updates.lastRestockedBy = performedBy;
+      }
+
+      transaction.update(docRef, updates);
+
+      // Write inventory log atomically inside same transaction
+      const logRef = firestoreDb.collection('inventory_logs').doc();
+      transaction.set(logRef, {
+        itemId: id,
+        itemName: data.name,
+        action: 'SET_STOCK',
+        quantity: Math.abs(stockDiff),
+        quantityChanged: stockDiff,
+        previousStock: previousStock,
+        newStock: stock,
+        performedBy: performedBy,
+        updatedBy: performedBy,
+        timestamp: timestamp
+      });
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to set stock:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// Fetch recent inventory audit trail logs
+app.get('/api/inventory/logs', async (req, res) => {
+  if (!isFirebaseConfigured || !firestoreDb) {
+    return res.status(500).json({ error: "Firebase not configured." });
+  }
+  try {
+    const snapshot = await firestoreDb.collection('inventory_logs')
+      .orderBy('timestamp', 'desc')
+      .limit(50)
+      .get();
+    const logs = [];
+    snapshot.forEach(doc => {
+      logs.push({ id: doc.id, ...doc.data() });
+    });
+    res.json(logs);
+  } catch (err) {
+    console.error("Failed to fetch inventory logs:", err);
+    res.status(500).json({ error: "Failed to fetch logs" });
+  }
+});
+
+// Reset Daily Sales Count
+app.post('/api/menu/reset-sales', async (req, res) => {
+  if (!isFirebaseConfigured || !firestoreDb) {
+    return res.status(500).json({ error: "Firebase not configured." });
+  }
+
+  try {
+    const snapshot = await firestoreDb.collection('menu_items').get();
+    const batch = firestoreDb.batch();
+    snapshot.forEach(doc => {
+      batch.update(doc.ref, { soldToday: 0 });
+    });
+    await batch.commit();
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to reset sales:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -596,6 +922,64 @@ async function syncDatabaseToFirestore() {
       for (const brief of dbData.ai_briefing) {
         await firestoreDb.collection('ai_briefing').doc(brief.date).set(brief);
       }
+    }
+
+    // 6. Schema Migration: Ensure all menu items have inventory fields
+    const currentMenuSnapshot = await firestoreDb.collection('menu_items').get();
+    const migrationBatch = firestoreDb.batch();
+    let migrationCount = 0;
+    currentMenuSnapshot.forEach(doc => {
+      const data = doc.data();
+      const updates = {};
+      let needsUpdate = false;
+      
+      if (data.stock === undefined) {
+        updates.stock = 25; // default starting stock
+        needsUpdate = true;
+      }
+      if (data.lowStockThreshold === undefined) {
+        updates.lowStockThreshold = 5; // default low threshold
+        needsUpdate = true;
+      }
+      if (data.soldToday === undefined) {
+        updates.soldToday = 0;
+        needsUpdate = true;
+      }
+      if (data.status === undefined) {
+        const currentStock = updates.stock !== undefined ? updates.stock : data.stock;
+        const currentThreshold = updates.lowStockThreshold !== undefined ? updates.lowStockThreshold : data.lowStockThreshold;
+        
+        let newStatus = 'Available';
+        if (currentStock === 0) {
+          newStatus = 'Out Of Stock';
+        } else if (currentStock <= currentThreshold) {
+          newStatus = 'Low Stock';
+        }
+        updates.status = newStatus;
+        needsUpdate = true;
+      }
+      if (data.lastUpdated === undefined) {
+        updates.lastUpdated = new Date().toISOString();
+        needsUpdate = true;
+      }
+      if (data.lastRestockedAt === undefined) {
+        updates.lastRestockedAt = new Date().toISOString();
+        needsUpdate = true;
+      }
+      if (data.lastRestockedBy === undefined) {
+        updates.lastRestockedBy = 'System Migration';
+        needsUpdate = true;
+      }
+      
+      if (needsUpdate) {
+        migrationBatch.update(doc.ref, updates);
+        migrationCount++;
+      }
+    });
+    
+    if (migrationCount > 0) {
+      await migrationBatch.commit();
+      console.log(`Successfully migrated ${migrationCount} menu items in Firestore with new stock fields.`);
     }
 
     console.log("Firestore initialization/sync checks complete.");

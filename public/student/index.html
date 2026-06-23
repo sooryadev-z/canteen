@@ -241,6 +241,7 @@
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let firebaseConfig = null;
         let unsubscribeMenu = null;
+        let unsubscribeOrders = null;
         let pollingInterval = null;
 
         // Check session user
@@ -314,17 +315,28 @@
                     : '';
 
                 // Stock Status Pill
-                const stockBadge = item.is_available
-                    ? `<span class="flex items-center gap-1 bg-emerald-950/90 text-emerald-400 border border-emerald-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
-                        In Stock
-                       </span>`
-                    : `<span class="flex items-center gap-1 bg-red-950/90 text-red-400 border border-red-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
-                        Sold Out
+                let stockBadge = '';
+                const currentStock = item.stock !== undefined ? item.stock : 25;
+                const lowThreshold = item.lowStockThreshold !== undefined ? item.lowStockThreshold : 5;
+                const itemStatus = item.status || (currentStock === 0 ? 'Out Of Stock' : (currentStock <= lowThreshold ? 'Low Stock' : 'Available'));
+                
+                if (currentStock === 0 || itemStatus === 'Out Of Stock') {
+                    stockBadge = `<span class="flex items-center gap-1 bg-red-950/90 text-red-400 border border-red-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
+                        Out Of Stock
                        </span>`;
+                } else if (currentStock <= lowThreshold || itemStatus === 'Low Stock') {
+                    stockBadge = `<span class="flex items-center gap-1 bg-amber-950/90 text-amber-400 border border-amber-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
+                        Low Stock (Only ${currentStock} left)
+                       </span>`;
+                } else {
+                    stockBadge = `<span class="flex items-center gap-1 bg-emerald-950/90 text-emerald-400 border border-emerald-500/30 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
+                        Available (${currentStock})
+                       </span>`;
+                }
                 
                 // CTA Action Button (Color-changing when item is in cart)
                 let actionCTA = '';
-                if (!item.is_available) {
+                if (currentStock === 0 || itemStatus === 'Out Of Stock') {
                     actionCTA = `
                         <button class="w-full bg-slate-800 text-slate-500 py-2.5 px-4 rounded-xl text-xs font-semibold cursor-not-allowed" disabled>
                             Out of Stock
@@ -454,10 +466,21 @@
                 event.stopPropagation();
             }
             const item = allMenuItems.find(m => m.id === itemId);
-            if (!item || !item.is_available) return;
+            if (!item) return;
+
+            const currentStock = item.stock !== undefined ? item.stock : 25;
+            const itemStatus = item.status || (currentStock === 0 ? 'Out Of Stock' : 'Available');
+            if (currentStock === 0 || itemStatus === 'Out Of Stock') {
+                showToast("Item is out of stock!");
+                return;
+            }
 
             const existingIndex = cart.findIndex(c => c.id === itemId);
             if (existingIndex !== -1) {
+                if (cart[existingIndex].quantity >= currentStock) {
+                    showToast(`Cannot add more. Only ${currentStock} items in stock.`);
+                    return;
+                }
                 cart[existingIndex].quantity += 1;
             } else {
                 cart.push({
@@ -478,8 +501,16 @@
             if (event && event.stopPropagation) {
                 event.stopPropagation();
             }
+            const item = allMenuItems.find(m => m.id === itemId);
+            if (!item) return;
+
+            const currentStock = item.stock !== undefined ? item.stock : 25;
             const itemIndex = cart.findIndex(c => c.id === itemId);
             if (itemIndex !== -1) {
+                if (cart[itemIndex].quantity >= currentStock) {
+                    showToast(`Cannot add more. Only ${currentStock} items in stock.`);
+                    return;
+                }
                 cart[itemIndex].quantity += 1;
                 updateCartState();
                 renderMenu();
@@ -524,7 +555,7 @@
             if (cart.length === 0) {
                 cartContainer.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-16 text-center text-slate-500">
-                        <span class="material-symbols-outlined text-3xl mb-2 text-slate-600 font-sans">shopping_basket</span>
+                        <span class="material-symbols-outlined text-3xl mb-2 text-slate-600">shopping_basket</span>
                         <p class="text-[10px] font-semibold font-sans">Your cart is empty</p>
                     </div>
                 `;
@@ -589,6 +620,51 @@
             }
         }
 
+        // Toast Notification System
+        function showToast(message) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-20 right-4 z-[9999] flex flex-col gap-2 pointer-events-none';
+                document.body.appendChild(container);
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = 'animate-fade-in-up bg-slate-900 border border-emerald-500/30 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md pointer-events-auto max-w-sm';
+            toast.innerHTML = `
+                <span class="material-symbols-outlined text-primary">check_circle</span>
+                <div class="flex-grow">
+                    <p class="text-xs font-bold">${message}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.5s ease-out';
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+
+        // Request browser notification permission
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        function triggerBrowserNotification(tokenNumber) {
+            if (Notification.permission === 'granted') {
+                new Notification("CafeGo Order Ready", {
+                    body: `Your order ${tokenNumber} is ready for pickup.`,
+                    icon: "https://lh3.googleusercontent.com/aida-public/AB6AXuADEUPr8GJpMcuQcACnK1Hs9JierNenB8TwdaZXtYELr1t5sn-3qYDS-DZUYeXKBKcRCZyZYtn1BySwBeQv6l4s79eJOyjBUwp7lzPIJGPlDRMuxV3IbULJvnRM2xeZIi6ZAu5KhslvnKDnW-VIvei5ONFZJ3sUxH3Fsn_v4uUnXXcPUY2_ypFxJCWqisW2bfjuop02HJb1VVexAr4yuZ3UbaDj74NQnTsjReJLXSJdSPvykSZvCyqTLbyoue7RcXoUPwJ-C-0t9zN2"
+                });
+            }
+        }
+
         async function initRealtime() {
             if (!firebaseConfig || firebaseConfig.projectId === "YOUR_PROJECT_ID") {
                 console.warn("Firebase is not configured. Falling back to HTTP polling.");
@@ -598,13 +674,13 @@
 
             try {
                 const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
-                const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                const { getFirestore, collection, onSnapshot, query, where } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
                 
                 console.log("Firebase initialized successfully on Student Dashboard. Starting listeners.");
                 const app = initializeApp(firebaseConfig);
                 const db = getFirestore(app);
                 
-                // Listen to menu items in real-time
+                // 1. Listen to menu items in real-time
                 unsubscribeMenu = onSnapshot(collection(db, 'menu_items'), (snapshot) => {
                     const items = [];
                     snapshot.forEach((doc) => {
@@ -620,6 +696,31 @@
                     console.error("Menu onSnapshot error, falling back to polling:", error);
                     startPolling();
                 });
+
+                // 2. Listen to student's orders in real-time to trigger Preparing -> Ready status notifications
+                if (loggedInUser && loggedInUser.id) {
+                    const previousOrderStatuses = new Map();
+                    let isFirstOrderSnapshot = true;
+                    const ordersQuery = query(collection(db, 'orders'), where('user_id', '==', loggedInUser.id));
+                    
+                    unsubscribeOrders = onSnapshot(ordersQuery, (snapshot) => {
+                        snapshot.forEach((doc) => {
+                            const order = doc.data();
+                            const orderId = doc.id;
+                            const oldStatus = previousOrderStatuses.get(orderId);
+                            
+                            if (!isFirstOrderSnapshot && oldStatus === 'Preparing' && order.status === 'Ready') {
+                                const message = `Your order ${order.token_number} is ready for pickup.`;
+                                showToast(message);
+                                triggerBrowserNotification(order.token_number);
+                            }
+                            previousOrderStatuses.set(orderId, order.status);
+                        });
+                        isFirstOrderSnapshot = false;
+                    }, (error) => {
+                        console.error("Orders onSnapshot error:", error);
+                    });
+                }
 
             } catch (err) {
                 console.error("Failed to initialize Firebase SDK, falling back to HTTP polling:", err);
@@ -645,6 +746,7 @@
         // Cleanup
         window.addEventListener('beforeunload', () => {
             if (unsubscribeMenu) unsubscribeMenu();
+            if (unsubscribeOrders) unsubscribeOrders();
             if (pollingInterval) clearInterval(pollingInterval);
         });
 
