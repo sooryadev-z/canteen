@@ -86,6 +86,9 @@ async function runImporter() {
 
           if (item !== null && typeof item === 'object') {
             docBody = { ...item };
+            if (collectionName === 'college_ids') {
+              docBody.valid = true;
+            }
             if ('id' in docBody) {
               docId = String(docBody.id);
               delete docBody.id; // Remove "id" from body to avoid redundancy

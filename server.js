@@ -886,10 +886,10 @@ app.post('/api/auth/validate-id', async (req, res) => {
   };
 
   if (dbUser) {
-    userDetails.name = dbUser.name;
-    userDetails.email = dbUser.email;
-    userDetails.role = (dbUser.role === 'chef') ? 'kitchen' : dbUser.role;
-    userDetails.id = dbUser.id || dbUser.user_id || 1;
+    userDetails.name = dbUser.name || (role === 'student' ? 'Arjun' : (role === 'chef' ? 'Marcus Chen' : 'Alex Rivera'));
+    userDetails.email = dbUser.email || (role === 'student' ? 'arjun@lmcst.ac.in' : (role === 'chef' ? 'chef.marcus@lmcst.ac.in' : 'admin.alex@lmcst.ac.in'));
+    userDetails.role = dbUser.role ? ((dbUser.role === 'chef') ? 'kitchen' : dbUser.role) : (role === 'chef' ? 'kitchen' : role);
+    userDetails.id = dbUser.user_id || dbUser.id || (role === 'student' ? 1 : (role === 'chef' ? 2 : 3));
   } else {
     if (role === 'student') {
       userDetails.name = 'Arjun';
@@ -948,17 +948,21 @@ async function syncDatabaseToFirestore() {
     }
 
     // 4. Sync college_ids
-    const collegeIdsSnapshot = await firestoreDb.collection('college_ids').get();
-    if (collegeIdsSnapshot.empty && dbData.college_ids && dbData.college_ids.length > 0) {
-      console.log(`Syncing ${dbData.college_ids.length} college IDs from db.json to Firestore...`);
+    if (dbData.college_ids && dbData.college_ids.length > 0) {
+      console.log(`Syncing/updating ${dbData.college_ids.length} college IDs from db.json to Firestore...`);
+      const batch = firestoreDb.batch();
       for (const item of dbData.college_ids) {
         if (typeof item === 'object' && item !== null) {
           const { id, ...bodyWithoutId } = item;
-          await firestoreDb.collection('college_ids').doc(id).set({ valid: true, ...bodyWithoutId });
+          const ref = firestoreDb.collection('college_ids').doc(id);
+          batch.set(ref, { valid: true, ...bodyWithoutId }, { merge: true });
         } else {
-          await firestoreDb.collection('college_ids').doc(item).set({ valid: true });
+          const ref = firestoreDb.collection('college_ids').doc(item);
+          batch.set(ref, { valid: true }, { merge: true });
         }
       }
+      await batch.commit();
+      console.log("College IDs synced successfully.");
     }
 
     // 5. Sync ai_briefing
