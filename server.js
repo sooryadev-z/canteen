@@ -810,105 +810,108 @@ ${suggestions.slice(0, 3).map(s => `- ${s}`).join('\n')}`;
 // COLLEGE ID VALIDATION ENDPOINT
 // ==========================================
 app.post('/api/auth/validate-id', async (req, res) => {
-  const { collegeId, role } = req.body;
+  const { collegeId, role, password } = req.body;
   
-  if (!collegeId || !role) {
-    return res.status(400).json({ valid: false, error: 'College ID and role are required.' });
+  if (!collegeId || !role || password === undefined) {
+    return res.status(400).json({ valid: false, error: 'ID/Email, role, and password are required.' });
   }
 
   // 1. Format validation using Regular Expression
-  // Format XX-YYYYY-ZZ (e.g. CS-10245-26)
   const studentRegex = /^[A-Z]{2}-\d{5}-\d{2}$/;
-  // Format chef-XXX-YY or admin-XXX-YY (e.g. chef-marcus-26 or admin-alex-26)
   const staffRegex = /^(chef|admin)-[a-zA-Z]+-\d{2}$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  let isValidFormat = false;
-  if (role === 'student') {
-    isValidFormat = studentRegex.test(collegeId);
-  } else if (role === 'chef' || role === 'admin') {
-    isValidFormat = staffRegex.test(collegeId);
-  }
-
-  if (!isValidFormat) {
-    let formatMsg = role === 'student' 
-      ? 'Format must be XX-YYYYY-ZZ (e.g., CS-10245-26).' 
-      : 'Format must be role-name-YY (e.g., chef-marcus-26 or admin-alex-26).';
-    return res.status(400).json({ valid: false, error: `Invalid College ID format. ${formatMsg}` });
-  }
-
-  // 2. Database Check
   let dbUser = null;
-  if (isFirebaseConfigured && firestoreDb) {
-    try {
-      const docSnap = await firestoreDb.collection('college_ids').doc(collegeId).get();
-      if (!docSnap.exists) {
-        return res.status(404).json({ valid: false, error: 'College ID not registered in database.' });
+
+  try {
+    // Regular ID + Password Login Database Check
+    const isEmailInput = emailRegex.test(collegeId);
+    
+    if (!isEmailInput) {
+      // Validate ID format
+      let isValidIdFormat = false;
+      if (role === 'student') {
+        isValidIdFormat = studentRegex.test(collegeId);
+      } else if (role === 'chef' || role === 'admin') {
+        isValidIdFormat = staffRegex.test(collegeId);
       }
-      dbUser = docSnap.data();
-    } catch (e) {
-      console.error("Error validating college ID in Firestore:", e);
-      return res.status(500).json({ valid: false, error: 'Database check failed' });
-    }
-  } else {
-    const db = await readDB();
-    const registeredIds = db.college_ids || [];
-    const matchedItem = registeredIds.find(item => {
-      if (typeof item === 'string') {
-        return item === collegeId;
-      } else if (item && typeof item === 'object') {
-        return item.id === collegeId;
+      
+      if (!isValidIdFormat) {
+        let formatMsg = role === 'student' 
+          ? 'Format must be XX-YYYYY-ZZ (e.g., CS-10245-26).' 
+          : 'Format must be role-name-YY (e.g., chef-marcus-26 or admin-alex-26).';
+        return res.status(400).json({ valid: false, error: `Invalid ID format. ${formatMsg}` });
       }
-      return false;
-    });
-
-    if (!matchedItem) {
-      return res.status(404).json({ valid: false, error: 'College ID not registered in database.' });
     }
-    if (typeof matchedItem === 'object') {
-      dbUser = matchedItem;
+
+    // Check role mismatch for IDs before db check
+    if (!isEmailInput) {
+      if (role === 'chef' && !collegeId.startsWith('chef-')) {
+        return res.status(400).json({ valid: false, error: 'Role mismatch. Chef ID required.' });
+      }
+      if (role === 'admin' && !collegeId.startsWith('admin-')) {
+        return res.status(400).json({ valid: false, error: 'Role mismatch. Admin ID required.' });
+      }
+      if (role === 'student' && (collegeId.startsWith('chef-') || collegeId.startsWith('admin-'))) {
+        return res.status(400).json({ valid: false, error: 'Role mismatch. Student ID required.' });
+      }
     }
-  }
 
-  // 3. Match ID prefixes for Role check
-  if (role === 'chef' && !collegeId.startsWith('chef-')) {
-    return res.status(400).json({ valid: false, error: 'College ID role mismatch. Chef ID required.' });
-  }
-  if (role === 'admin' && !collegeId.startsWith('admin-')) {
-    return res.status(400).json({ valid: false, error: 'College ID role mismatch. Admin ID required.' });
-  }
-  if (role === 'student' && (collegeId.startsWith('chef-') || collegeId.startsWith('admin-'))) {
-    return res.status(400).json({ valid: false, error: 'College ID role mismatch. Student ID required.' });
-  }
-
-  let userDetails = {
-    collegeId: collegeId,
-    role: role
-  };
-
-  if (dbUser) {
-    userDetails.name = dbUser.name || (role === 'student' ? 'Arjun' : (role === 'chef' ? 'Marcus Chen' : 'Alex Rivera'));
-    userDetails.email = dbUser.email || (role === 'student' ? 'arjun@lmcst.ac.in' : (role === 'chef' ? 'chef.marcus@lmcst.ac.in' : 'admin.alex@lmcst.ac.in'));
-    userDetails.role = dbUser.role ? ((dbUser.role === 'chef') ? 'kitchen' : dbUser.role) : (role === 'chef' ? 'kitchen' : role);
-    userDetails.id = dbUser.user_id || dbUser.id || (role === 'student' ? 1 : (role === 'chef' ? 2 : 3));
-  } else {
-    if (role === 'student') {
-      userDetails.name = 'Arjun';
-      userDetails.email = 'arjun@lmcst.ac.in';
-      userDetails.id = 1;
-    } else if (role === 'chef') {
-      userDetails.name = 'Marcus Chen';
-      userDetails.email = 'chef.marcus@lmcst.ac.in';
-      userDetails.role = 'kitchen';
-      userDetails.id = 2;
-    } else if (role === 'admin') {
-      userDetails.name = 'Alex Rivera';
-      userDetails.email = 'admin.alex@lmcst.ac.in';
-      userDetails.id = 3;
+    if (isFirebaseConfigured && firestoreDb) {
+      if (isEmailInput) {
+        const snapshot = await firestoreDb.collection('college_ids').where('email', '==', collegeId).get();
+        if (!snapshot.empty) {
+          dbUser = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+        }
+      } else {
+        const docSnap = await firestoreDb.collection('college_ids').doc(collegeId).get();
+        if (docSnap.exists) {
+          dbUser = { id: docSnap.id, ...docSnap.data() };
+        }
+      }
+    } else {
+      const db = await readDB();
+      const registeredIds = db.college_ids || [];
+      dbUser = registeredIds.find(item => {
+        if (item && typeof item === 'object') {
+          return item.id === collegeId || item.email === collegeId;
+        }
+        return false;
+      });
     }
-  }
 
-  // Return success
-  res.json({ valid: true, message: 'Authentication successful', user: userDetails });
+    if (!dbUser) {
+      return res.status(404).json({ valid: false, error: 'Credentials not registered in database.' });
+    }
+
+    // Role check for matched email input
+    const dbUserRole = dbUser.role ? ((dbUser.role === 'chef') ? 'kitchen' : dbUser.role) : (role === 'chef' ? 'kitchen' : role);
+    const mappedRequestRole = role === 'chef' ? 'kitchen' : role;
+    if (dbUserRole !== mappedRequestRole) {
+      return res.status(400).json({ valid: false, error: `Credentials do not belong to the selected ${role} role.` });
+    }
+
+    // Password check
+    if (dbUser.password !== password) {
+      return res.status(401).json({ valid: false, error: 'Invalid password.' });
+    }
+
+    // 4. Build User Session Object
+    const resolvedRole = dbUser.role === 'chef' ? 'kitchen' : dbUser.role;
+    let userDetails = {
+      collegeId: dbUser.id || dbUser.collegeId || collegeId,
+      name: dbUser.name || (resolvedRole === 'student' ? 'Arjun' : (resolvedRole === 'kitchen' ? 'Marcus Chen' : 'Alex Rivera')),
+      email: dbUser.email || (resolvedRole === 'student' ? 'arjun@lmcst.ac.in' : (resolvedRole === 'kitchen' ? 'chef.marcus@lmcst.ac.in' : 'admin.alex@lmcst.ac.in')),
+      role: resolvedRole,
+      id: dbUser.user_id || dbUser.id || 1
+    };
+
+    return res.json({ valid: true, message: 'Authentication successful', user: userDetails });
+
+  } catch (e) {
+    console.error("Error in validate-id endpoint:", e);
+    return res.status(500).json({ valid: false, error: 'Authentication service encountered an error' });
+  }
 });
 
 // Sync local db.json orders to Firestore if Firestore is active and empty

@@ -4,6 +4,14 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>CafeGo - Student Dashboard</title>
+    <script>
+        (function() {
+            const loggedInUser = JSON.parse(sessionStorage.getItem('user'));
+            if (!loggedInUser || loggedInUser.role !== 'student') {
+                window.location.replace('/');
+            }
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -108,7 +116,7 @@
             <span class="font-bold text-lg text-primary">CafeGo</span>
         </div>
         <div class="flex items-center gap-2">
-            <button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container rounded-full transition-colors" onclick="location.href='/'">logout</button>
+            <button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container rounded-full transition-colors" onclick="sessionStorage.removeItem('user'); location.href='/'">logout</button>
             <button class="material-symbols-outlined text-primary text-2xl active:scale-95 transition-transform" data-icon="notifications">notifications</button>
         </div>
     </header>
@@ -227,7 +235,7 @@
             <span class="material-symbols-outlined">rate_review</span>
             <span class="text-[9px] font-bold">Feedback</span>
         </a>
-        <a class="flex flex-col items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-90 duration-150" href="/">
+        <a onclick="sessionStorage.removeItem('user')" class="flex flex-col items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-90 duration-150" href="/">
             <span class="material-symbols-outlined">logout</span>
             <span class="text-[9px] font-bold">Log out</span>
         </a>

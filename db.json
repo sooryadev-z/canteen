@@ -5,98 +5,112 @@
       "name": "Arjun",
       "email": "arjun@lmcst.ac.in",
       "role": "student",
-      "user_id": 1
+      "user_id": 1,
+      "password": "password123"
     },
     {
       "id": "EC-20412-25",
       "name": "Sarah",
       "email": "sarah@lmcst.ac.in",
       "role": "student",
-      "user_id": 2
+      "user_id": 2,
+      "password": "password123"
     },
     {
       "id": "CS-10247-26",
       "name": "Rohan",
       "email": "rohan@lmcst.ac.in",
       "role": "student",
-      "user_id": 3
+      "user_id": 3,
+      "password": "password123"
     },
     {
       "id": "CS-10246-26",
       "name": "Neha",
       "email": "neha@lmcst.ac.in",
       "role": "student",
-      "user_id": 4
+      "user_id": 4,
+      "password": "password123"
     },
     {
       "id": "ME-30154-24",
       "name": "Karthik",
       "email": "karthik@lmcst.ac.in",
       "role": "student",
-      "user_id": 5
+      "user_id": 5,
+      "password": "password123"
     },
     {
       "id": "CE-40112-23",
       "name": "Deepika",
       "email": "deepika@lmcst.ac.in",
       "role": "student",
-      "user_id": 6
+      "user_id": 6,
+      "password": "password123"
     },
     {
       "id": "CS-10248-26",
       "name": "Priya",
       "email": "priya@lmcst.ac.in",
       "role": "student",
-      "user_id": 7
+      "user_id": 7,
+      "password": "password123"
     },
     {
       "id": "EC-20413-25",
       "name": "Vikram",
       "email": "vikram@lmcst.ac.in",
       "role": "student",
-      "user_id": 8
+      "user_id": 8,
+      "password": "password123"
     },
     {
       "id": "ME-30155-24",
       "name": "Aditya",
       "email": "aditya@lmcst.ac.in",
       "role": "student",
-      "user_id": 9
+      "user_id": 9,
+      "password": "password123"
     },
     {
       "id": "CE-40113-23",
       "name": "Ananya",
       "email": "ananya@lmcst.ac.in",
       "role": "student",
-      "user_id": 10
+      "user_id": 10,
+      "password": "password123"
     },
     {
       "id": "chef-marcus-26",
       "name": "Marcus Chen",
       "email": "chef.marcus@lmcst.ac.in",
       "role": "chef",
-      "user_id": 11
+      "user_id": 11,
+      "password": "chefpassword"
     },
     {
       "id": "chef-lisa-26",
       "name": "Lisa Wong",
       "email": "chef.lisa@lmcst.ac.in",
       "role": "chef",
-      "user_id": 12
+      "user_id": 12,
+      "password": "chefpassword"
     },
     {
       "id": "admin-alex-26",
       "name": "Alex Rivera",
       "email": "admin.alex@lmcst.ac.in",
       "role": "admin",
-      "user_id": 13
+      "user_id": 13,
+      "password": "adminpassword"
     },
     {
       "id": "admin-clara-26",
       "name": "Clara Oswald",
       "email": "admin.clara@lmcst.ac.in",
       "role": "admin",
-      "user_id": 14
+      "user_id": 14,
+      "password": "adminpassword"
     }
   ],
   "menu_items": [

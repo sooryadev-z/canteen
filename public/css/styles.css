@@ -125,3 +125,33 @@ html.dark body {
   transform: translateY(-6px);
 }
 
+/* Premium Transition Overlay Animations */
+@keyframes checkmarkIn {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.transition-checkmark-active {
+  animation: checkmarkIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.transition-overlay-exit {
+  animation: slideUp 0.4s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+}
+

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CafeGo Kitchen - Secure Staff Login</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="/css/styles.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-background font-sans selection:bg-primary/30 min-h-screen flex flex-col items-center justify-center relative overflow-x-hidden">
+    <!-- Ambient background glows -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <div class="absolute inset-0 bg-gradient-to-tr from-background via-transparent to-primary/5"></div>
+        <div class="absolute top-1/4 left-1/4 w-[300px] h-[300px] rounded-full bg-primary/10 blur-[100px]"></div>
+    </div>
+
+    <!-- Login Container -->
+    <main class="relative z-10 w-full max-w-[450px] p-6 sm:p-8 animate-fade-in-up">
+        <!-- Brand Logo & Header -->
+        <div class="flex flex-col items-center mb-8 text-center">
+            <div class="bg-primary/10 p-3.5 rounded-2xl border border-primary/20 mb-3">
+                <span class="material-symbols-outlined text-primary text-[42px]">chef_hat</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">Kitchen Portal</h1>
+            <p class="text-xs text-on-surface-variant mt-1">Authorized access only. Please sign in to manage order queues.</p>
+        </div>
+
+        <!-- Glassmorphic Login Card -->
+        <div class="glass-card p-8 rounded-[2.5rem] shadow-2xl border border-white/10">
+            <h2 class="text-lg font-bold text-white mb-6">Staff Authentication</h2>
+            
+            <form onsubmit="handleKitchenLogin(event)" class="space-y-6">
+                <!-- Kitchen ID Field -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-on-surface-variant ml-1">Kitchen ID (Format: chef-name-YY)</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">badge</span>
+                        <input id="kitchen-id" class="w-full bg-surface-container-lowest border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-on-surface text-sm placeholder:text-outline focus:border-primary transition-all duration-200" placeholder="e.g., chef-marcus-26" type="text" required/>
+                    </div>
+                </div>
+
+                <!-- Password Field -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-on-surface-variant ml-1">Password</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+                        <input id="kitchen-password" class="w-full bg-surface-container-lowest border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-on-surface text-sm placeholder:text-outline focus:border-primary transition-all duration-200" placeholder="••••••••" type="password" required/>
+                    </div>
+                </div>
+
+                <!-- Error Box -->
+                <p id="error-message" class="text-xs text-red-500 font-bold ml-1 hidden transition-all duration-300"></p>
+
+                <!-- Login Button -->
+                <button type="submit" id="login-btn" class="w-full flex items-center justify-center gap-3 bg-primary text-on-primary py-4 px-6 rounded-2xl font-bold text-sm hover:brightness-110 shadow-lg transition-all duration-300 active:scale-[0.98]">
+                    <span class="material-symbols-outlined">login</span>
+                    Sign In
+                </button>
+            </form>
+        </div>
+
+        <!-- Back to main portal link -->
+        <div class="text-center mt-6">
+            <a href="/" class="text-xs text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                Back to main portal
+            </a>
+        </div>
+    </main>
+
+    <script>
+        // Clear any previous session on loading the login page
+        sessionStorage.removeItem('user');
+
+        async function handleKitchenLogin(event) {
+            event.preventDefault();
+            
+            const collegeId = document.getElementById('kitchen-id').value.trim();
+            const password = document.getElementById('kitchen-password').value;
+            const loginBtn = document.getElementById('login-btn');
+            const errorEl = document.getElementById('error-message');
+
+            errorEl.classList.add('hidden');
+
+            // Format validation
+            const staffRegex = /^chef-[a-zA-Z]+-\d{2}$/;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (!staffRegex.test(collegeId) && !emailRegex.test(collegeId)) {
+                errorEl.textContent = 'Invalid Kitchen ID/Email format. Expected: chef-name-YY or a valid Email';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            // Loader State
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> Authenticating...`;
+
+            try {
+                const res = await fetch('/api/auth/validate-id', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ collegeId, role: 'chef', password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.valid) {
+                    sessionStorage.setItem('user', JSON.stringify(data.user));
+                    playTransitionAndRedirect('/kitchen/index.html');
+                } else {
+                    errorEl.textContent = data.error || 'Authentication failed.';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+                errorEl.textContent = 'Could not reach server. Verify server status.';
+                errorEl.classList.remove('hidden');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = `<span class="material-symbols-outlined">login</span> Sign In`;
+            }
+        }
+
+        async function playTransitionAndRedirect(redirectUrl) {
+            const overlay = document.getElementById('transition-overlay');
+            const spinner = document.getElementById('transition-spinner-circle');
+            const checkmark = document.getElementById('transition-checkmark');
+            const title = document.getElementById('transition-title');
+            const subtitle = document.getElementById('transition-subtitle');
+            const content = document.getElementById('transition-content');
+
+            // 1. Show overlay
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.classList.add('opacity-100');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+
+            // 2. Animate spinner drawing
+            spinner.style.strokeDashoffset = '0';
+
+            // Wait for validation/spinner drawing (400ms)
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            // 3. Morph spinner to success checkmark
+            checkmark.classList.remove('opacity-0', 'scale-50');
+            checkmark.classList.add('opacity-100', 'scale-100', 'transition-checkmark-active');
+            spinner.setAttribute('stroke', '#a1f4c8'); // Brighten the circle
+            title.textContent = 'Access Granted';
+            title.classList.add('text-primary');
+            subtitle.textContent = 'Redirecting to your dashboard...';
+
+            // Wait for checkmark check to feel satisfying (450ms)
+            await new Promise(resolve => setTimeout(resolve, 450));
+
+            // 4. Slide out/fade out transition overlay
+            overlay.classList.add('transition-overlay-exit');
+
+            // Wait for slide up animation (350ms)
+            await new Promise(resolve => setTimeout(resolve, 350));
+
+            // 5. Redirect
+            window.location.href = redirectUrl;
+        }
+    </script>
+
+    <!-- Premium Transition Overlay -->
+    <div id="transition-overlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div class="flex flex-col items-center space-y-6 transform scale-95 transition-transform duration-300" id="transition-content">
+            <div class="relative w-24 h-24 flex items-center justify-center">
+                <!-- SVG Morphing Spinner Circle -->
+                <svg class="absolute inset-0 w-full h-full rotate-[-90deg]">
+                    <circle cx="48" cy="48" r="42" stroke="rgba(134, 215, 173, 0.1)" stroke-width="6" fill="none" />
+                    <circle id="transition-spinner-circle" cx="48" cy="48" r="42" stroke="#86d7ad" stroke-width="6" fill="none" 
+                            stroke-dasharray="264" stroke-dashoffset="264" class="transition-all duration-500 ease-out" />
+                </svg>
+                <!-- Checkmark Icon -->
+                <span id="transition-checkmark" class="material-symbols-outlined text-primary text-[56px] opacity-0 scale-50 transition-all duration-300">check</span>
+            </div>
+            <div class="text-center">
+                <p id="transition-title" class="text-lg font-bold text-white tracking-wide">Authenticating...</p>
+                <p id="transition-subtitle" class="text-xs text-on-surface-variant/70 mt-1">Verifying secure credentials</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

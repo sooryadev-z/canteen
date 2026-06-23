@@ -148,18 +148,27 @@
                     <!-- College ID Input Form -->
                     <div class="space-y-6">
                         <div class="space-y-2">
-                            <label id="id-label" class="text-sm font-semibold text-on-surface ml-1">College ID (Format: XX-YYYYY-ZZ)</label>
+                            <label id="id-label" class="text-sm font-semibold text-on-surface ml-1">College Email ID (Format: name@lmcst.ac.in)</label>
                             <div class="relative">
-                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">badge</span>
-                                <input id="college-id-input" oninput="realTimeValidate()" class="w-full bg-surface-container-lowest border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-on-surface placeholder:text-outline focus:border-primary transition-all duration-200" placeholder="e.g., CS-10245-26" type="text" required/>
+                                <span id="id-icon" class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">mail</span>
+                                <input id="college-id-input" oninput="realTimeValidate()" class="w-full bg-surface-container-lowest border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-on-surface placeholder:text-outline focus:border-primary transition-all duration-200" placeholder="e.g., arjun@lmcst.ac.in" type="text" required/>
                             </div>
                             <p id="error-message" class="text-xs text-red-500 font-bold ml-1 hidden transition-all duration-300"></p>
                             <p id="hint-message" class="text-[10px] text-on-surface-variant/70 ml-1 italic"></p>
                         </div>
 
+                        <!-- Password input field -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-on-surface ml-1">Password</label>
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+                                <input id="password-input" class="w-full bg-surface-container-lowest border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-on-surface placeholder:text-outline focus:border-primary transition-all duration-200" placeholder="••••••••" type="password" required/>
+                            </div>
+                        </div>
+
                         <button id="login-btn" onclick="handleCollegeIdLogin()" class="w-full flex items-center justify-center gap-3 bg-primary text-on-primary py-4 px-6 rounded-2xl font-semibold text-sm hover:brightness-110 shadow-lg transition-all duration-300 active:scale-[0.98]">
                             <span class="material-symbols-outlined">login</span>
-                            Login with College ID
+                            Login
                         </button>
                     </div>
                 </div>
@@ -170,6 +179,9 @@
     <!-- Interactive Layer: Role Selection & Validation Script -->
     <script>
         let selectedRoleName = 'student';
+
+        // Clear any previous session on loading the login page
+        sessionStorage.removeItem('user');
 
         function selectRole(role) {
             selectedRoleName = role;
@@ -187,22 +199,28 @@
             const input = document.getElementById('college-id-input');
             const label = document.getElementById('id-label');
             const hint = document.getElementById('hint-message');
+            const icon = document.getElementById('id-icon');
+            const passwordInput = document.getElementById('password-input');
             
             // Hide previous errors
             hideError();
+            if (passwordInput) passwordInput.value = '';
 
             if (role === 'chef') {
                 label.textContent = 'Kitchen ID (Format: chef-name-YY)';
                 input.placeholder = 'e.g., chef-marcus-26';
                 hint.textContent = 'Registered credentials format: chef-[name]-[year]';
+                if (icon) icon.textContent = 'badge';
             } else if (role === 'admin') {
                 label.textContent = 'Admin ID (Format: admin-name-YY)';
                 input.placeholder = 'e.g., admin-alex-26';
                 hint.textContent = 'Registered credentials format: admin-[name]-[year]';
+                if (icon) icon.textContent = 'badge';
             } else {
-                label.textContent = 'College Student ID (Format: XX-YYYYY-ZZ)';
-                input.placeholder = 'e.g., CS-10245-26';
-                hint.textContent = 'Format: [2-Letter Department]-[5-Digit Roll]-[2-Digit Year]';
+                label.textContent = 'College Email ID (Format: username@lmcst.ac.in)';
+                input.placeholder = 'e.g., arjun@lmcst.ac.in';
+                hint.textContent = 'Format: Registered college student email ID';
+                if (icon) icon.textContent = 'mail';
             }
         }
 
@@ -216,14 +234,14 @@
                 return;
             }
 
-            const studentRegex = /^[A-Z]{2}-\d{5}-\d{2}$/;
             const staffRegex = /^(chef|admin)-[a-zA-Z]+-\d{2}$/;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
             let isValid = false;
             if (selectedRoleName === 'student') {
-                isValid = studentRegex.test(inputVal);
+                isValid = emailRegex.test(inputVal);
             } else {
-                isValid = staffRegex.test(inputVal);
+                isValid = staffRegex.test(inputVal) || emailRegex.test(inputVal);
             }
 
             if (isValid) {
@@ -236,6 +254,7 @@
             }
         }
 
+        // Show/hide error helper
         function showError(msg) {
             const errorEl = document.getElementById('error-message');
             errorEl.textContent = msg;
@@ -250,56 +269,61 @@
         // API verification on submission
         async function handleCollegeIdLogin() {
             const collegeId = document.getElementById('college-id-input').value.trim();
+            const password = document.getElementById('password-input').value;
             const loginBtn = document.getElementById('login-btn');
             
             if (!collegeId) {
-                showError('College ID cannot be empty.');
+                showError('Email/ID cannot be empty.');
+                return;
+            }
+            if (!password) {
+                showError('Password cannot be empty.');
                 return;
             }
 
             // Real-time double check
-            const studentRegex = /^[A-Z]{2}-\d{5}-\d{2}$/;
             const staffRegex = /^(chef|admin)-[a-zA-Z]+-\d{2}$/;
-            let formatValid = selectedRoleName === 'student' ? studentRegex.test(collegeId) : staffRegex.test(collegeId);
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            let formatValid = false;
+            if (selectedRoleName === 'student') {
+                formatValid = emailRegex.test(collegeId);
+            } else {
+                formatValid = staffRegex.test(collegeId) || emailRegex.test(collegeId);
+            }
 
             if (!formatValid) {
                 const formatExpectation = selectedRoleName === 'student'
-                    ? 'XX-YYYYY-ZZ (e.g., CS-10245-26)'
-                    : 'role-name-YY (e.g., chef-marcus-26 or admin-alex-26)';
-                showError(`Invalid College ID format. Expected: ${formatExpectation}`);
+                    ? 'valid student college Email (e.g. arjun@lmcst.ac.in)'
+                    : 'role-name-YY (e.g., chef-marcus-26 or admin-alex-26) or a valid Email';
+                showError(`Invalid format. Expected: ${formatExpectation}`);
                 return;
             }
 
             // Loader state
             loginBtn.disabled = true;
-            loginBtn.innerHTML = `<span class="material-symbols-outlined animate-spin">progress_activity</span> Authenticating...`;
+            loginBtn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> Authenticating...`;
 
             try {
                 const res = await fetch('/api/auth/validate-id', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ collegeId, role: selectedRoleName })
+                    body: JSON.stringify({ collegeId, role: selectedRoleName, password })
                 });
 
                 const data = await res.json();
 
                 if (res.ok && data.valid) {
-                    // Use the user details returned from server, fallback to default mock if undefined
-                    const user = data.user || {
-                        name: selectedRoleName === 'student' ? 'Arjun' : (selectedRoleName === 'chef' ? 'Marcus Chen' : 'Alex Rivera'),
-                        email: selectedRoleName === 'student' ? 'arjun@lmcst.ac.in' : (selectedRoleName === 'chef' ? 'chef.marcus@lmcst.ac.in' : 'admin.alex@lmcst.ac.in'),
-                        role: selectedRoleName === 'chef' ? 'kitchen' : selectedRoleName,
-                        id: selectedRoleName === 'student' ? 1 : (selectedRoleName === 'chef' ? 2 : 3),
-                        collegeId: collegeId
-                    };
-                    sessionStorage.setItem('user', JSON.stringify(user));
-                    if (selectedRoleName === 'student') {
-                        window.location.href = '/student/index.html';
-                    } else if (selectedRoleName === 'chef') {
-                        window.location.href = '/kitchen/index.html';
-                    } else if (selectedRoleName === 'admin') {
-                        window.location.href = '/admin/index.html';
+                    sessionStorage.setItem('user', JSON.stringify(data.user));
+                    let redirectUrl = '/';
+                    if (data.user.role === 'student') {
+                        redirectUrl = '/student/index.html';
+                    } else if (data.user.role === 'kitchen') {
+                        redirectUrl = '/kitchen/index.html';
+                    } else if (data.user.role === 'admin') {
+                        redirectUrl = '/admin/index.html';
                     }
+                    playTransitionAndRedirect(redirectUrl);
                 } else {
                     showError(data.error || 'Authentication failed.');
                 }
@@ -308,12 +332,73 @@
                 showError('Could not reach servers. Check local server status.');
             } finally {
                 loginBtn.disabled = false;
-                loginBtn.innerHTML = `<span class="material-symbols-outlined">login</span> Login with College ID`;
+                loginBtn.innerHTML = `<span class="material-symbols-outlined">login</span> Login`;
             }
+        }
+
+        async function playTransitionAndRedirect(redirectUrl) {
+            const overlay = document.getElementById('transition-overlay');
+            const spinner = document.getElementById('transition-spinner-circle');
+            const checkmark = document.getElementById('transition-checkmark');
+            const title = document.getElementById('transition-title');
+            const subtitle = document.getElementById('transition-subtitle');
+            const content = document.getElementById('transition-content');
+
+            // 1. Show overlay
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.classList.add('opacity-100');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+
+            // 2. Animate spinner drawing
+            spinner.style.strokeDashoffset = '0';
+
+            // Wait for validation/spinner drawing (400ms)
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            // 3. Morph spinner to success checkmark
+            checkmark.classList.remove('opacity-0', 'scale-50');
+            checkmark.classList.add('opacity-100', 'scale-100', 'transition-checkmark-active');
+            spinner.setAttribute('stroke', '#a1f4c8'); // Brighten the circle
+            title.textContent = 'Access Granted';
+            title.classList.add('text-primary');
+            subtitle.textContent = 'Redirecting to your dashboard...';
+
+            // Wait for checkmark check to feel satisfying (450ms)
+            await new Promise(resolve => setTimeout(resolve, 450));
+
+            // 4. Slide out/fade out transition overlay
+            overlay.classList.add('transition-overlay-exit');
+
+            // Wait for slide up animation (350ms)
+            await new Promise(resolve => setTimeout(resolve, 350));
+
+            // 5. Redirect
+            window.location.href = redirectUrl;
         }
         
         // Initialize default role
         selectRole('student');
     </script>
+
+    <!-- Premium Transition Overlay -->
+    <div id="transition-overlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div class="flex flex-col items-center space-y-6 transform scale-95 transition-transform duration-300" id="transition-content">
+            <div class="relative w-24 h-24 flex items-center justify-center">
+                <!-- SVG Morphing Spinner Circle -->
+                <svg class="absolute inset-0 w-full h-full rotate-[-90deg]">
+                    <circle cx="48" cy="48" r="42" stroke="rgba(134, 215, 173, 0.1)" stroke-width="6" fill="none" />
+                    <circle id="transition-spinner-circle" cx="48" cy="48" r="42" stroke="#86d7ad" stroke-width="6" fill="none" 
+                            stroke-dasharray="264" stroke-dashoffset="264" class="transition-all duration-500 ease-out" />
+                </svg>
+                <!-- Checkmark Icon -->
+                <span id="transition-checkmark" class="material-symbols-outlined text-primary text-[56px] opacity-0 scale-50 transition-all duration-300">check</span>
+            </div>
+            <div class="text-center">
+                <p id="transition-title" class="text-lg font-bold text-white tracking-wide">Authenticating...</p>
+                <p id="transition-subtitle" class="text-xs text-on-surface-variant/70 mt-1">Verifying secure credentials</p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
