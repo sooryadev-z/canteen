@@ -9,7 +9,6 @@ const { GoogleGenAI } = require('@google/generative-ai');
 dotenv.config();
 
 const { db: firestoreDb, isConfigured: isFirebaseConfigured, firebaseConfig } = require('./firebase-config');
-const { doc, setDoc, updateDoc } = require('firebase/firestore');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,8 +51,7 @@ app.get('/api/config', (req, res) => {
 app.get('/api/menu', async (req, res) => {
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { getDocs, collection } = require('firebase/firestore');
-      const snapshot = await getDocs(collection(firestoreDb, 'menu_items'));
+      const snapshot = await firestoreDb.collection('menu_items').get();
       const items = [];
       snapshot.forEach(doc => {
         items.push({ id: Number(doc.id), ...doc.data() });
@@ -75,8 +73,7 @@ app.post('/api/menu', async (req, res) => {
   
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { getDocs, collection } = require('firebase/firestore');
-      const snapshot = await getDocs(collection(firestoreDb, 'menu_items'));
+      const snapshot = await firestoreDb.collection('menu_items').get();
       const ids = [];
       snapshot.forEach(doc => ids.push(Number(doc.id)));
       nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
@@ -104,8 +101,8 @@ app.post('/api/menu', async (req, res) => {
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { doc, setDoc } = require('firebase/firestore');
-      await setDoc(doc(firestoreDb, 'menu_items', String(newItem.id)), newItem);
+      const { id, ...bodyWithoutId } = newItem;
+      await firestoreDb.collection('menu_items').doc(String(newItem.id)).set(bodyWithoutId);
     } catch (e) {
       console.error("Error writing menu item to Firestore:", e);
     }
@@ -129,9 +126,8 @@ app.put('/api/menu/:id', async (req, res) => {
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { getDoc, doc } = require('firebase/firestore');
-      const docSnap = await getDoc(doc(firestoreDb, 'menu_items', String(id)));
-      if (docSnap.exists()) {
+      const docSnap = await firestoreDb.collection('menu_items').doc(String(id)).get();
+      if (docSnap.exists) {
         item = { id, ...docSnap.data() };
       }
     } catch (e) {
@@ -150,8 +146,8 @@ app.put('/api/menu/:id', async (req, res) => {
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { doc, setDoc } = require('firebase/firestore');
-      await setDoc(doc(firestoreDb, 'menu_items', String(id)), updatedItem);
+      const { id: _, ...bodyWithoutId } = updatedItem;
+      await firestoreDb.collection('menu_items').doc(String(id)).set(bodyWithoutId);
     } catch (e) {
       console.error("Error updating menu item in Firestore:", e);
     }
@@ -170,8 +166,7 @@ app.delete('/api/menu/:id', async (req, res) => {
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { deleteDoc, doc } = require('firebase/firestore');
-      await deleteDoc(doc(firestoreDb, 'menu_items', String(id)));
+      await firestoreDb.collection('menu_items').doc(String(id)).delete();
     } catch (e) {
       console.error("Error deleting menu item from Firestore:", e);
     }
@@ -192,8 +187,7 @@ app.delete('/api/menu/:id', async (req, res) => {
 app.get('/api/orders', async (req, res) => {
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { getDocs, collection } = require('firebase/firestore');
-      const snapshot = await getDocs(collection(firestoreDb, 'orders'));
+      const snapshot = await firestoreDb.collection('orders').get();
       const orders = [];
       snapshot.forEach(doc => {
         orders.push({ id: Number(doc.id), ...doc.data() });
@@ -215,8 +209,7 @@ app.post('/api/orders', async (req, res) => {
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { getDocs, collection } = require('firebase/firestore');
-      const snapshot = await getDocs(collection(firestoreDb, 'orders'));
+      const snapshot = await firestoreDb.collection('orders').get();
       const ids = [];
       snapshot.forEach(doc => ids.push(Number(doc.id)));
       nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
@@ -252,12 +245,11 @@ app.post('/api/orders', async (req, res) => {
     }
     if (isFirebaseConfigured && firestoreDb) {
       try {
-        const { getDoc, doc, updateDoc } = require('firebase/firestore');
-        const itemDocRef = doc(firestoreDb, 'menu_items', String(menuItemId));
-        const itemDoc = await getDoc(itemDocRef);
-        if (itemDoc.exists()) {
+        const itemDocRef = firestoreDb.collection('menu_items').doc(String(menuItemId));
+        const itemDoc = await itemDocRef.get();
+        if (itemDoc.exists) {
           const currentCount = itemDoc.data().orders_count || 0;
-          await updateDoc(itemDocRef, { orders_count: currentCount + (orderItem.quantity || 1) });
+          await itemDocRef.update({ orders_count: currentCount + (orderItem.quantity || 1) });
         }
       } catch (e) {
         console.error("Error updating menu item order count in Firestore:", e);
@@ -267,8 +259,8 @@ app.post('/api/orders', async (req, res) => {
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { doc, setDoc } = require('firebase/firestore');
-      await setDoc(doc(firestoreDb, 'orders', String(newOrder.id)), newOrder);
+      const { id, ...bodyWithoutId } = newOrder;
+      await firestoreDb.collection('orders').doc(String(newOrder.id)).set(bodyWithoutId);
     } catch (e) {
       console.error("Failed to save order to Firestore:", e);
     }
@@ -292,9 +284,8 @@ app.put('/api/orders/:id', async (req, res) => {
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { getDoc, doc } = require('firebase/firestore');
-      const docSnap = await getDoc(doc(firestoreDb, 'orders', String(id)));
-      if (docSnap.exists()) {
+      const docSnap = await firestoreDb.collection('orders').doc(String(id)).get();
+      if (docSnap.exists) {
         order = { id, ...docSnap.data() };
       }
     } catch (e) {
@@ -313,8 +304,8 @@ app.put('/api/orders/:id', async (req, res) => {
 
   if (isFirebaseConfigured && firestoreDb) {
     try {
-      const { doc, setDoc } = require('firebase/firestore');
-      await setDoc(doc(firestoreDb, 'orders', String(id)), updatedOrder);
+      const { id: _, ...bodyWithoutId } = updatedOrder;
+      await firestoreDb.collection('orders').doc(String(id)).set(bodyWithoutId);
     } catch (e) {
       console.error("Failed to update order in Firestore:", e);
     }
@@ -573,51 +564,53 @@ app.post('/api/auth/validate-id', async (req, res) => {
 async function syncDatabaseToFirestore() {
   if (!isFirebaseConfigured || !firestoreDb) return;
   try {
-    const { getDocs, collection, setDoc, doc } = require('firebase/firestore');
     const dbData = await readDB();
 
     // 1. Sync orders
-    const ordersSnapshot = await getDocs(collection(firestoreDb, 'orders'));
+    const ordersSnapshot = await firestoreDb.collection('orders').get();
     if (ordersSnapshot.empty && dbData.orders && dbData.orders.length > 0) {
       console.log(`Syncing ${dbData.orders.length} orders from db.json to Firestore...`);
       for (const order of dbData.orders) {
-        await setDoc(doc(firestoreDb, 'orders', String(order.id)), order);
+        const { id, ...bodyWithoutId } = order;
+        await firestoreDb.collection('orders').doc(String(order.id)).set(bodyWithoutId);
       }
     }
 
     // 2. Sync menu_items
-    const menuSnapshot = await getDocs(collection(firestoreDb, 'menu_items'));
+    const menuSnapshot = await firestoreDb.collection('menu_items').get();
     if (menuSnapshot.empty && dbData.menu_items && dbData.menu_items.length > 0) {
       console.log(`Syncing ${dbData.menu_items.length} menu items from db.json to Firestore...`);
       for (const item of dbData.menu_items) {
-        await setDoc(doc(firestoreDb, 'menu_items', String(item.id)), item);
+        const { id, ...bodyWithoutId } = item;
+        await firestoreDb.collection('menu_items').doc(String(item.id)).set(bodyWithoutId);
       }
     }
 
     // 3. Sync feedback
-    const feedbackSnapshot = await getDocs(collection(firestoreDb, 'feedback'));
+    const feedbackSnapshot = await firestoreDb.collection('feedback').get();
     if (feedbackSnapshot.empty && dbData.feedback && dbData.feedback.length > 0) {
       console.log(`Syncing ${dbData.feedback.length} feedback items from db.json to Firestore...`);
       for (const f of dbData.feedback) {
-        await setDoc(doc(firestoreDb, 'feedback', String(f.id)), f);
+        const { id, ...bodyWithoutId } = f;
+        await firestoreDb.collection('feedback').doc(String(f.id)).set(bodyWithoutId);
       }
     }
 
     // 4. Sync college_ids
-    const collegeIdsSnapshot = await getDocs(collection(firestoreDb, 'college_ids'));
+    const collegeIdsSnapshot = await firestoreDb.collection('college_ids').get();
     if (collegeIdsSnapshot.empty && dbData.college_ids && dbData.college_ids.length > 0) {
       console.log(`Syncing ${dbData.college_ids.length} college IDs from db.json to Firestore...`);
       for (const id of dbData.college_ids) {
-        await setDoc(doc(firestoreDb, 'college_ids', id), { valid: true });
+        await firestoreDb.collection('college_ids').doc(id).set({ valid: true });
       }
     }
 
     // 5. Sync ai_briefing
-    const aiBriefingSnapshot = await getDocs(collection(firestoreDb, 'ai_briefing'));
+    const aiBriefingSnapshot = await firestoreDb.collection('ai_briefing').get();
     if (aiBriefingSnapshot.empty && dbData.ai_briefing && dbData.ai_briefing.length > 0) {
       console.log(`Syncing ${dbData.ai_briefing.length} AI briefings from db.json to Firestore...`);
       for (const brief of dbData.ai_briefing) {
-        await setDoc(doc(firestoreDb, 'ai_briefing', brief.date), brief);
+        await firestoreDb.collection('ai_briefing').doc(brief.date).set(brief);
       }
     }
 
