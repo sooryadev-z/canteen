@@ -122,7 +122,7 @@
         </div>
         <div class="flex items-center gap-4">
             <span class="material-symbols-outlined text-primary">notifications</span>
-            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-primary font-bold text-xs border border-primary/20">JD</div>
+            <div id="student-initials" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-primary font-bold text-xs border border-primary/20">JD</div>
         </div>
     </header>
 
@@ -212,15 +212,26 @@
 
     <script>
         let currentRating = 0;
-        
-        const itemId = parseInt(sessionStorage.getItem('rating_item_id')) || 1;
-        const itemName = sessionStorage.getItem('rating_item_name') || 'Paneer Butter Masala';
-        const itemDate = sessionStorage.getItem('rating_item_date') || 'Recent';
-        
-        document.getElementById('meal-title').textContent = itemName;
-        document.getElementById('meal-date').textContent = `${itemDate} meal`;
-        
         const loggedInUser = JSON.parse(sessionStorage.getItem('user')) || { id: 1, name: 'Arjun' };
+
+        // Set student initials
+        if (loggedInUser && loggedInUser.name) {
+            const parts = loggedInUser.name.trim().split(/\s+/);
+            let initials = '';
+            if (parts.length >= 2) {
+                initials = parts[0][0] + parts[parts.length - 1][0];
+            } else if (parts[0].length >= 2) {
+                initials = parts[0].substring(0, 2);
+            } else {
+                initials = parts[0][0];
+            }
+            const initialsEl = document.getElementById('student-initials');
+            if (initialsEl) initialsEl.textContent = initials.toUpperCase();
+        }
+
+        let itemId = parseInt(sessionStorage.getItem('rating_item_id'));
+        let itemName = sessionStorage.getItem('rating_item_name');
+        let itemDate = sessionStorage.getItem('rating_item_date');
 
         // Fetch image for item
         async function loadMealImage() {
@@ -235,7 +246,51 @@
                 console.error(err);
             }
         }
-        loadMealImage();
+
+        async function initFeedbackPage() {
+            // Check if we need to load the most recent order item as default
+            if (!itemId || !itemName) {
+                try {
+                    const res = await fetch('/api/orders');
+                    if (res.ok) {
+                        const orders = await res.json();
+                        // Filter for this student's orders
+                        const studentOrders = orders.filter(o => o.user_id === loggedInUser.id);
+                        if (studentOrders.length > 0) {
+                            // Find the most recent order (sorting by created_at desc)
+                            studentOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                            // Get the first item from the most recent order
+                            const lastOrder = studentOrders[0];
+                            if (lastOrder.items && lastOrder.items.length > 0) {
+                                const lastItem = lastOrder.items[0];
+                                itemId = lastItem.id;
+                                itemName = lastItem.name;
+                                const dateObj = new Date(lastOrder.created_at);
+                                itemDate = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                                
+                                // Save to sessionStorage so it persists
+                                sessionStorage.setItem('rating_item_id', itemId);
+                                sessionStorage.setItem('rating_item_name', itemName);
+                                sessionStorage.setItem('rating_item_date', itemDate);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to load last order for feedback fallback", err);
+                }
+            }
+
+            // Fallbacks if still not set
+            if (!itemId) itemId = 1;
+            if (!itemName) itemName = 'Paneer Butter Masala';
+            if (!itemDate) itemDate = 'Recent';
+
+            document.getElementById('meal-title').textContent = itemName;
+            document.getElementById('meal-date').textContent = `${itemDate} meal`;
+
+            await loadMealImage();
+        }
+        initFeedbackPage();
 
         function setRating(rating) {
             currentRating = rating;
@@ -292,7 +347,7 @@
                 if (res.ok) {
                     btn.innerHTML = 'Feedback Sent!';
                     btn.classList.replace('bg-primary', 'bg-slate-800');
-                    btn.classList.add('text-slate-455');
+                    btn.classList.add('text-slate-400');
                     
                     toast.classList.remove('translate-y-32', 'opacity-0');
                     toast.classList.add('translate-y-0', 'opacity-100');
