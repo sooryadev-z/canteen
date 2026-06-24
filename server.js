@@ -14,7 +14,7 @@ const rawKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || proce
 const apiKey = (rawKey && rawKey !== 'undefined' && rawKey !== 'null' && rawKey.trim() !== '') ? rawKey.trim() : null;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-const { db: firestoreDb, isConfigured: isFirebaseConfigured, firebaseConfig } = require('./firebase-config');
+const { db: firestoreDb, isConfigured: isFirebaseConfigured, firebaseConfig, adminAuth } = require('./firebase-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -45,7 +45,6 @@ app.get('/api/config', (req, res) => {
 // ==========================================
 // FIREBASE ADMIN & GOOGLE AUTH SERVICE
 // ==========================================
-const { getAuth } = require('firebase-admin/auth');
 
 // Function to seed approved admin emails into Firestore
 async function seedAdmins() {
@@ -164,21 +163,35 @@ async function requireStaff(req, res, next) {
 app.post('/api/auth/google-signin', async (req, res) => {
   const { idToken, role } = req.body;
   if (!idToken || !role) {
-    return res.status(400).json({ success: false, error: 'idToken and role are required' });
+    return res.status(400).json({ 
+      success: false, 
+      valid: false,
+      error: 'idToken and role are required',
+      message: 'idToken and role are required'
+    });
   }
 
   try {
-    if (!isFirebaseConfigured || !firestoreDb) {
-      return res.status(500).json({ success: false, error: 'Firebase is not configured on the backend.' });
+    if (!isFirebaseConfigured || !adminAuth) {
+      return res.status(500).json({ 
+        success: false, 
+        valid: false,
+        error: 'Firebase Admin Auth is not configured on the backend.',
+        message: 'Firebase Admin Auth is not configured on the backend.'
+      });
     }
 
     // Verify token using Firebase Admin SDK
-    const adminAuth = getAuth();
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const { email, name, picture } = decodedToken;
 
     if (!email) {
-      return res.status(400).json({ success: false, error: 'Email not provided in token' });
+      return res.status(400).json({ 
+        success: false, 
+        valid: false,
+        error: 'Email not provided in token',
+        message: 'Email not provided in token'
+      });
     }
 
     const lastLogin = new Date().toISOString();
@@ -189,7 +202,9 @@ app.post('/api/auth/google-signin', async (req, res) => {
       if (!allowedStudents.includes(email)) {
         return res.status(403).json({ 
           success: false, 
-          error: "This Google account is not authorized for Student access." 
+          valid: false,
+          error: "This Google account is not authorized for Student access.",
+          message: "This Google account is not authorized for Student access."
         });
       }
 
@@ -223,7 +238,9 @@ app.post('/api/auth/google-signin', async (req, res) => {
       if (!allowedAdmins.includes(email)) {
         return res.status(403).json({ 
           success: false, 
-          error: "This Google account is not authorized for Admin access." 
+          valid: false,
+          error: "This Google account is not authorized for Admin access.",
+          message: "This Google account is not authorized for Admin access."
         });
       }
 
@@ -249,18 +266,28 @@ app.post('/api/auth/google-signin', async (req, res) => {
       return res.json({ success: true, message: 'Google Authentication successful', user: userDetails });
 
     } else {
-      return res.status(400).json({ success: false, error: 'Invalid login role requested.' });
+      return res.status(400).json({ 
+        success: false, 
+        valid: false,
+        error: 'Invalid login role requested.',
+        message: 'Invalid login role requested.'
+      });
     }
 
   } catch (error) {
-    console.error("Error in google-signin endpoint:", error);
+    console.error("Exception in google-signin endpoint:", error.stack || error);
     let errMsg = "Authentication service encountered an error";
     if (error.code === 'auth/id-token-expired') {
       errMsg = "Google login session expired. Please sign in again.";
     } else if (error.code === 'auth/argument-error') {
       errMsg = "Invalid authentication token format.";
     }
-    return res.status(500).json({ success: false, error: errMsg });
+    return res.status(500).json({ 
+      success: false, 
+      valid: false,
+      error: errMsg,
+      message: errMsg
+    });
   }
 });
 
@@ -1216,7 +1243,12 @@ app.post('/api/auth/validate-id', async (req, res) => {
   const { collegeId, role, password } = req.body;
   
   if (!collegeId || !role || password === undefined) {
-    return res.status(400).json({ valid: false, error: 'ID/Email, role, and password are required.' });
+    return res.status(400).json({ 
+      success: false,
+      valid: false, 
+      error: 'ID/Email, role, and password are required.',
+      message: 'ID/Email, role, and password are required.'
+    });
   }
 
   // 1. Format validation using Regular Expression
@@ -1243,20 +1275,40 @@ app.post('/api/auth/validate-id', async (req, res) => {
         let formatMsg = role === 'student' 
           ? 'Format must be XX-YYYYY-ZZ (e.g., CS-10245-26).' 
           : 'Format must be role-name-YY (e.g., chef-marcus-26 or admin-alex-26).';
-        return res.status(400).json({ valid: false, error: `Invalid ID format. ${formatMsg}` });
+        return res.status(400).json({ 
+          success: false,
+          valid: false, 
+          error: `Invalid ID format. ${formatMsg}`,
+          message: `Invalid ID format. ${formatMsg}`
+        });
       }
     }
 
     // Check role mismatch for IDs before db check
     if (!isEmailInput) {
       if (role === 'chef' && !collegeId.startsWith('chef-')) {
-        return res.status(400).json({ valid: false, error: 'Role mismatch. Chef ID required.' });
+        return res.status(400).json({ 
+          success: false,
+          valid: false, 
+          error: 'Role mismatch. Chef ID required.',
+          message: 'Role mismatch. Chef ID required.'
+        });
       }
       if (role === 'admin' && !collegeId.startsWith('admin-')) {
-        return res.status(400).json({ valid: false, error: 'Role mismatch. Admin ID required.' });
+        return res.status(400).json({ 
+          success: false,
+          valid: false, 
+          error: 'Role mismatch. Admin ID required.',
+          message: 'Role mismatch. Admin ID required.'
+        });
       }
       if (role === 'student' && (collegeId.startsWith('chef-') || collegeId.startsWith('admin-'))) {
-        return res.status(400).json({ valid: false, error: 'Role mismatch. Student ID required.' });
+        return res.status(400).json({ 
+          success: false,
+          valid: false, 
+          error: 'Role mismatch. Student ID required.',
+          message: 'Role mismatch. Student ID required.'
+        });
       }
     }
 
@@ -1284,19 +1336,34 @@ app.post('/api/auth/validate-id', async (req, res) => {
     }
 
     if (!dbUser) {
-      return res.status(404).json({ valid: false, error: 'Credentials not registered in database.' });
+      return res.status(404).json({ 
+        success: false,
+        valid: false, 
+        error: 'Credentials not registered in database.',
+        message: 'Credentials not registered in database.'
+      });
     }
 
     // Role check for matched email input
     const dbUserRole = dbUser.role ? ((dbUser.role === 'chef') ? 'kitchen' : dbUser.role) : (role === 'chef' ? 'kitchen' : role);
     const mappedRequestRole = role === 'chef' ? 'kitchen' : role;
     if (dbUserRole !== mappedRequestRole) {
-      return res.status(400).json({ valid: false, error: `Credentials do not belong to the selected ${role} role.` });
+      return res.status(400).json({ 
+        success: false,
+        valid: false, 
+        error: `Credentials do not belong to the selected ${role} role.`,
+        message: `Credentials do not belong to the selected ${role} role.`
+      });
     }
 
     // Password check
     if (dbUser.password !== password) {
-      return res.status(401).json({ valid: false, error: 'Invalid password.' });
+      return res.status(401).json({ 
+        success: false,
+        valid: false, 
+        error: 'Invalid password.',
+        message: 'Invalid password.'
+      });
     }
 
     // 4. Build User Session Object
@@ -1312,8 +1379,13 @@ app.post('/api/auth/validate-id', async (req, res) => {
     return res.json({ valid: true, message: 'Authentication successful', user: userDetails });
 
   } catch (e) {
-    console.error("Error in validate-id endpoint:", e);
-    return res.status(500).json({ valid: false, error: 'Authentication service encountered an error' });
+    console.error("Exception in validate-id endpoint for collegeId/role:", collegeId, role, e.stack || e);
+    return res.status(500).json({ 
+      success: false,
+      valid: false, 
+      error: 'Authentication service encountered an error',
+      message: 'Authentication service encountered an error'
+    });
   }
 });
 
@@ -1475,6 +1547,34 @@ function startDailyBriefingScheduler() {
   // Check every 30 minutes thereafter
   setInterval(checkAndGenerateDailyBriefing, 30 * 60 * 1000);
 }
+
+// Uncaught exception and unhandled rejection logging
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception thrown:', error);
+});
+
+// Global error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Unhandled exception caught by global middleware:", err);
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      valid: false,
+      error: "Invalid JSON payload",
+      message: err.message
+    });
+  }
+  res.status(500).json({
+    success: false,
+    valid: false,
+    error: "A server error occurred",
+    message: err.message || "A server error occurred"
+  });
+});
 
 // Start Server
 app.listen(PORT, async () => {

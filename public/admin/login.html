@@ -197,13 +197,33 @@
                     body: JSON.stringify({ collegeId, role: 'admin', password })
                 });
 
-                const data = await res.json();
+                let data = null;
+                const contentType = res.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        data = await res.json();
+                    } catch (parseErr) {
+                        console.error('Failed to parse JSON response:', parseErr);
+                    }
+                }
 
-                if (res.ok && data.valid) {
+                if (!res.ok) {
+                    if (data) {
+                        errorEl.textContent = data.error || data.message || `Error ${res.status}`;
+                    } else {
+                        const rawText = await res.text();
+                        console.error(`Server error (${res.status}):`, rawText);
+                        errorEl.textContent = rawText || `A server error occurred (Status ${res.status})`;
+                    }
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                if (data && data.valid) {
                     sessionStorage.setItem('user', JSON.stringify(data.user));
                     playTransitionAndRedirect('/admin/index.html');
                 } else {
-                    errorEl.textContent = data.error || 'Authentication failed.';
+                    errorEl.textContent = (data && (data.error || data.message)) || 'Authentication failed.';
                     errorEl.classList.remove('hidden');
                 }
             } catch (err) {
@@ -267,13 +287,33 @@
                     body: JSON.stringify({ idToken, role: 'admin' })
                 });
 
-                const data = await res.json();
+                let data = null;
+                const contentType = res.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        data = await res.json();
+                    } catch (parseErr) {
+                        console.error('Failed to parse JSON response:', parseErr);
+                    }
+                }
 
-                if (res.ok && data.success) {
+                if (!res.ok) {
+                    if (data) {
+                        errorEl.textContent = data.error || data.message || `Error ${res.status}`;
+                    } else {
+                        const rawText = await res.text();
+                        console.error(`Server error (${res.status}):`, rawText);
+                        errorEl.textContent = rawText || `A server error occurred (Status ${res.status})`;
+                    }
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                if (data && data.success) {
                     sessionStorage.setItem('user', JSON.stringify(data.user));
                     playTransitionAndRedirect('/admin/index.html');
                 } else {
-                    errorEl.textContent = data.error || 'Google login verification failed.';
+                    errorEl.textContent = (data && (data.error || data.message)) || 'Google login verification failed.';
                     errorEl.classList.remove('hidden');
                 }
             } catch (err) {
