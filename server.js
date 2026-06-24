@@ -658,62 +658,101 @@ app.post('/api/feedback', async (req, res) => {
 
 // Fetch latest briefing
 app.get('/api/insights/summary', async (req, res) => {
-  if (isFirebaseConfigured && firestoreDb) {
-    try {
-      const snapshot = await firestoreDb.collection('ai_briefing').orderBy('date', 'desc').limit(1).get();
-      if (!snapshot.empty) {
-        return res.json(snapshot.docs[0].data());
-      }
-    } catch (error) {
-      console.error("Error fetching AI briefing from Firestore:", error);
-      return res.status(500).json({ error: "Failed to fetch AI briefing from Firestore" });
-    }
-  }
-  const db = await readDB();
-  const latestBrief = db.ai_briefing && db.ai_briefing.length > 0
-    ? db.ai_briefing[db.ai_briefing.length - 1]
-    : null;
+  try {
+    if (isFirebaseConfigured && firestoreDb) {
+      // 1. Fetch latest cached briefing
+      const briefingSnapshot = await firestoreDb.collection('ai_briefing').orderBy('date', 'desc').limit(1).get();
+      const cachedBrief = !briefingSnapshot.empty ? briefingSnapshot.docs[0].data() : null;
 
-  res.json(latestBrief || { date: new Date().toISOString().split('T')[0], content: "No briefing generated yet for today." });
+      // 2. Fetch latest feedback
+      const feedbackSnapshot = await firestoreDb.collection('feedback').orderBy('created_at', 'desc').limit(1).get();
+      const latestFeedback = !feedbackSnapshot.empty ? feedbackSnapshot.docs[0].data() : null;
+
+      // Check if we need to regenerate
+      let needsRegenerate = false;
+      if (!cachedBrief) {
+        needsRegenerate = true;
+      } else if (latestFeedback && cachedBrief.generated_at) {
+        if (new Date(latestFeedback.created_at) > new Date(cachedBrief.generated_at)) {
+          needsRegenerate = true;
+        }
+      }
+
+      if (needsRegenerate) {
+        console.log("[AI Insights Cache] Cache is missing or stale. Regenerating...");
+        const todayStr = new Date().toISOString().split('T')[0];
+        const newBrief = await generateBriefingForDate(todayStr);
+        return res.json(newBrief);
+      } else {
+        console.log("[AI Insights Cache] Serving clean cached insights.");
+        return res.json(cachedBrief);
+      }
+    } else {
+      // Local db.json mode
+      const db = await readDB();
+      const cachedBrief = db.ai_briefing && db.ai_briefing.length > 0
+        ? db.ai_briefing[db.ai_briefing.length - 1]
+        : null;
+
+      const feedbacks = db.feedback || [];
+      let latestFeedback = null;
+      if (feedbacks.length > 0) {
+        latestFeedback = feedbacks.reduce((latest, f) => {
+          if (!latest || new Date(f.created_at) > new Date(latest.created_at)) {
+            return f;
+          }
+          return latest;
+        }, null);
+      }
+
+      let needsRegenerate = false;
+      if (!cachedBrief) {
+        needsRegenerate = true;
+      } else if (latestFeedback && cachedBrief.generated_at) {
+        if (new Date(latestFeedback.created_at) > new Date(cachedBrief.generated_at)) {
+          needsRegenerate = true;
+        }
+      }
+
+      if (needsRegenerate) {
+        console.log("[AI Insights Cache] Local cache is missing or stale. Regenerating...");
+        const todayStr = new Date().toISOString().split('T')[0];
+        const newBrief = await generateBriefingForDate(todayStr);
+        return res.json(newBrief);
+      } else {
+        console.log("[AI Insights Cache] Serving clean local cached insights.");
+        return res.json(cachedBrief);
+      }
+    }
+  } catch (error) {
+    console.error("Error in GET /api/insights/summary:", error);
+    res.status(500).json({ error: "Failed to fetch AI insights summary" });
+  }
 });
 
-// Helper to generate AI briefing for a specific date
-async function generateBriefingForDate(dateStr) {
-  if (!isFirebaseConfigured || !firestoreDb) {
-    throw new Error("Firebase not configured. Exclusive Firestore mode is enabled.");
-  }
+// Reusable helper function to generate AI insights using Gemini
+async function generateGeminiInsights(feedbacks) {
+  const modelName = "gemini-3.5-flash";
+  const maxRetries = 3;
+  const retryDelays = [2000, 4000, 8000];
 
-  let feedbacks = [];
-  try {
-    const snapshot = await firestoreDb.collection('feedback').get();
-    snapshot.forEach(doc => {
-      feedbacks.push({ id: Number(doc.id) || doc.id, ...doc.data() });
-    });
-  } catch (e) {
-    console.error("Error fetching feedback from Firestore for AI generation:", e);
-    throw new Error("Failed to read feedbacks from Firestore for AI summary");
-  }
+  const startTime = new Date().toISOString();
+  console.log(`[AI Insights] Generation started at ${startTime}. Model: ${modelName}`);
 
-  if (feedbacks.length === 0) {
-    const defaultBrief = {
-      date: dateStr,
-      content: "### Daily Kitchen Briefing\n\nNo student feedback has been submitted today yet."
+  if (!genAI) {
+    console.log("[AI Insights] No Gemini client initialized. Activating local fallback summary.");
+    const fallbackContent = generateLocalSummary(feedbacks);
+    return {
+      content: fallbackContent,
+      status: "fallback",
+      model: modelName,
+      attempts: 0
     };
-    await firestoreDb.collection('ai_briefing').doc(dateStr).set(defaultBrief);
-    return defaultBrief;
   }
 
   const feedbackText = feedbacks.map(f => `- [Rating: ${f.rating}★] [Item: ${f.menu_item_name}]: "${f.comments}"`).join('\n');
 
-  let briefingContent = '';
-
-  if (genAI) {
-    try {
-      const modelName = "gemini-3-flash-preview";
-      console.log("Using Gemini model:", modelName);
-      const model = genAI.getGenerativeModel({ model: modelName });
-
-      const prompt = `
+  const prompt = `
 You are an expert culinary auditor and canteen kitchen advisor.
 Below is raw daily feedback submitted by college students regarding the canteen food quality, taste, service, and availability.
 
@@ -721,31 +760,127 @@ Student Feedback Data:
 ${feedbackText}
 
 Generate a concise, structured Daily Kitchen Briefing for the kitchen staff. Break it down into:
-1. **Positive Highlights**: Summarize what went well (what students loved).
-2. **Critical Alerts**: Group specific alerts (e.g. food too salty, cold food, running out of stock early). Be specific about which items had complaints.
-3. **Actionable Suggestions**: 2-3 quick operational bullet points for tomorrow's prep (e.g., reduce salt in burger seasoning by 15%, increase prep volumes of brownies).
+1. **Overall Sentiment**: A 1-sentence summary of the general mood/satisfaction.
+2. **Positive Highlights**: Summarize what went well (what students loved).
+3. **Common Complaints**: Group general complaints from students.
+4. **Kitchen Alerts**: Critical warnings (e.g. food too salty, cold food, running out of stock early). Be specific about which items had complaints.
+5. **Menu Suggestions**: Operational adjustments for menu items.
+6. **Frequently Requested Items**: Items students are asking for more of.
+7. **Recommendations**: 2-3 quick operational bullet points for tomorrow's prep.
 
 Make it encouraging but direct. Use Markdown format. Keep it concise so kitchen staff can read it in 1 minute.
 `;
 
-      const result = await model.generateContent(prompt);
+  let attempt = 0;
+  while (attempt <= maxRetries) {
+    try {
+      const attemptStartTime = Date.now();
+      console.log(`[AI Insights] Requesting Gemini (Attempt ${attempt + 1}/${maxRetries + 1})...`);
+      
+      const model = genAI.getGenerativeModel({ model: modelName });
+      
+      // 15-second request timeout wrapper
+      const generatePromise = model.generateContent(prompt);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout: Gemini API request timed out after 15 seconds.")), 15000)
+      );
+
+      const result = await Promise.race([generatePromise, timeoutPromise]);
       const response = await result.response;
-      briefingContent = response.text();
+      const text = response.text();
+
+      const endTime = new Date().toISOString();
+      const durationMs = Date.now() - attemptStartTime;
+      console.log(`[AI Insights] Request succeeded in ${durationMs}ms at ${endTime}. Status: 200 OK`);
+
+      return {
+        content: text,
+        status: "success",
+        model: modelName,
+        attempts: attempt + 1
+      };
     } catch (error) {
-      console.error("Gemini briefing generation failed, falling back to local summary:", error);
-      briefingContent = generateLocalSummary(feedbacks);
+      attempt++;
+      const isRetryable = error.status === 429 || error.status === 503 || error.message.includes("Timeout") || error.message.includes("Service Unavailable") || error.message.includes("Too Many Requests");
+      console.error(`[AI Insights] Attempt ${attempt} failed:`, error.message || error);
+
+      if (attempt <= maxRetries && isRetryable) {
+        const delay = retryDelays[attempt - 1];
+        console.log(`[AI Insights] Retryable error encountered. Retrying in ${delay / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.log("[AI Insights] Max retries reached or non-retryable error. Activating local fallback summary.");
+        const fallbackContent = generateLocalSummary(feedbacks);
+        return {
+          content: fallbackContent,
+          status: "fallback",
+          model: modelName,
+          attempts: attempt,
+          error: error.message || String(error)
+        };
+      }
+    }
+  }
+}
+
+// Helper to generate AI briefing for a specific date
+async function generateBriefingForDate(dateStr) {
+  let feedbacks = [];
+
+  if (isFirebaseConfigured && firestoreDb) {
+    try {
+      const snapshot = await firestoreDb.collection('feedback').get();
+      snapshot.forEach(doc => {
+        feedbacks.push({ id: Number(doc.id) || doc.id, ...doc.data() });
+      });
+    } catch (e) {
+      console.error("Error fetching feedback from Firestore for AI generation:", e);
+      throw new Error("Failed to read feedbacks from Firestore for AI summary");
     }
   } else {
-    console.log("No GEMINI_API_KEY found, compiling mock summary based on feedback text");
-    briefingContent = generateLocalSummary(feedbacks);
+    const db = await readDB();
+    feedbacks = db.feedback || [];
   }
+
+  if (feedbacks.length === 0) {
+    const defaultBrief = {
+      date: dateStr,
+      content: "### Daily Kitchen Briefing\n\nNo student feedback has been submitted today yet.",
+      generated_at: new Date().toISOString()
+    };
+    if (isFirebaseConfigured && firestoreDb) {
+      await firestoreDb.collection('ai_briefing').doc(dateStr).set(defaultBrief);
+    } else {
+      const db = await readDB();
+      db.ai_briefing = db.ai_briefing || [];
+      db.ai_briefing = db.ai_briefing.filter(b => b.date !== dateStr);
+      db.ai_briefing.push(defaultBrief);
+      await fs.writeFile(DB_FILE, JSON.stringify(db, null, 2));
+    }
+    return defaultBrief;
+  }
+
+  const insightsResult = await generateGeminiInsights(feedbacks);
 
   const newBrief = {
     date: dateStr,
-    content: briefingContent
+    content: insightsResult.content,
+    generated_at: new Date().toISOString(),
+    status: insightsResult.status,
+    model: insightsResult.model,
+    attempts: insightsResult.attempts
   };
 
-  await firestoreDb.collection('ai_briefing').doc(dateStr).set(newBrief);
+  if (isFirebaseConfigured && firestoreDb) {
+    await firestoreDb.collection('ai_briefing').doc(dateStr).set(newBrief);
+  } else {
+    const db = await readDB();
+    db.ai_briefing = db.ai_briefing || [];
+    db.ai_briefing = db.ai_briefing.filter(b => b.date !== dateStr);
+    db.ai_briefing.push(newBrief);
+    await fs.writeFile(DB_FILE, JSON.stringify(db, null, 2));
+  }
+
   return newBrief;
 }
 
@@ -754,20 +889,33 @@ app.get('/api/test-gemini', async (req, res) => {
   console.log('Test endpoint hit. Key prefix:', process.env.GEMINI_API_KEY?.substring(0, 10));
 
   if (!genAI) {
-    return res.status(400).json({ error: "No GEMINI_API_KEY found in environment." });
+    return res.status(400).json({ status: "error", error: "No GEMINI_API_KEY found in environment." });
   }
 
+  const modelName = 'gemini-3.5-flash';
+  console.log("Using Gemini model:", modelName);
+
   try {
-    const modelName = 'gemini-3-flash-preview';
-    console.log("Using Gemini model:", modelName);
     const model = genAI.getGenerativeModel({ model: modelName });
-    const result = await model.generateContent('Hello Gemini');
+    
+    // Timeout wrapper for test endpoint
+    const generatePromise = model.generateContent('Hello Gemini');
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Timeout: Gemini API request timed out after 15 seconds.")), 15000)
+    );
+
+    const result = await Promise.race([generatePromise, timeoutPromise]);
     const response = await result.response;
-    res.json({ success: true, text: response.text() });
+    res.json({
+      status: "success",
+      model: modelName,
+      response: response.text()
+    });
   } catch (error) {
     console.error("Test Gemini endpoint failed:", error);
     res.status(500).json({
-      success: false,
+      status: "error",
+      model: modelName,
       error: error.message || error,
       details: error.stack || error
     });
@@ -776,10 +924,6 @@ app.get('/api/test-gemini', async (req, res) => {
 
 // Trigger new AI briefing generation
 app.post('/api/insights/generate', async (req, res) => {
-  if (!isFirebaseConfigured || !firestoreDb) {
-    return res.status(500).json({ error: "Firebase not configured. Exclusive Firestore mode is enabled." });
-  }
-
   try {
     const todayStr = new Date().toISOString().split('T')[0];
     const newBrief = await generateBriefingForDate(todayStr);
