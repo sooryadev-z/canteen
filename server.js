@@ -709,7 +709,9 @@ async function generateBriefingForDate(dateStr) {
 
   if (genAI) {
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+      const modelName = "gemini-3-flash-preview";
+      console.log("Using Gemini model:", modelName);
+      const model = genAI.getGenerativeModel({ model: modelName });
 
       const prompt = `
 You are an expert culinary auditor and canteen kitchen advisor.
@@ -756,7 +758,9 @@ app.get('/api/test-gemini', async (req, res) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+    const modelName = 'gemini-3-flash-preview';
+    console.log("Using Gemini model:", modelName);
+    const model = genAI.getGenerativeModel({ model: modelName });
     const result = await model.generateContent('Hello Gemini');
     const response = await result.response;
     res.json({ success: true, text: response.text() });
