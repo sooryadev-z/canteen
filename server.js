@@ -3,7 +3,7 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
 const dotenv = require('dotenv');
-const { GoogleGenAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Load environment variables
 dotenv.config();
@@ -671,10 +671,10 @@ app.get('/api/insights/summary', async (req, res) => {
   res.json(latestBrief || { date: new Date().toISOString().split('T')[0], content: "No briefing generated yet for today." });
 });
 
-// Trigger new AI briefing generation
-app.post('/api/insights/generate', async (req, res) => {
+// Helper to generate AI briefing for a specific date
+async function generateBriefingForDate(dateStr) {
   if (!isFirebaseConfigured || !firestoreDb) {
-    return res.status(500).json({ error: "Firebase not configured. Exclusive Firestore mode is enabled." });
+    throw new Error("Firebase not configured. Exclusive Firestore mode is enabled.");
   }
 
   let feedbacks = [];
@@ -685,14 +685,16 @@ app.post('/api/insights/generate', async (req, res) => {
     });
   } catch (e) {
     console.error("Error fetching feedback from Firestore for AI generation:", e);
-    return res.status(500).json({ error: "Failed to read feedbacks from Firestore for AI summary" });
+    throw new Error("Failed to read feedbacks from Firestore for AI summary");
   }
 
   if (feedbacks.length === 0) {
-    return res.json({
-      date: new Date().toISOString().split('T')[0],
+    const defaultBrief = {
+      date: dateStr,
       content: "### Daily Kitchen Briefing\n\nNo student feedback has been submitted today yet."
-    });
+    };
+    await firestoreDb.collection('ai_briefing').doc(dateStr).set(defaultBrief);
+    return defaultBrief;
   }
 
   const feedbackText = feedbacks.map(f => `- [Rating: ${f.rating}★] [Item: ${f.menu_item_name}]: "${f.comments}"`).join('\n');
@@ -702,15 +704,8 @@ app.post('/api/insights/generate', async (req, res) => {
 
   if (apiKey) {
     try {
-      let model;
-      try {
-        const { GoogleGenerativeAI } = require('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(apiKey);
-        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      } catch (err) {
-        const genAI = new GoogleGenAI({ apiKey });
-        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      }
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
       const prompt = `
 You are an expert culinary auditor and canteen kitchen advisor.
@@ -740,16 +735,27 @@ Make it encouraging but direct. Use Markdown format. Keep it concise so kitchen 
   }
 
   const newBrief = {
-    date: new Date().toISOString().split('T')[0],
+    date: dateStr,
     content: briefingContent
   };
 
+  await firestoreDb.collection('ai_briefing').doc(dateStr).set(newBrief);
+  return newBrief;
+}
+
+// Trigger new AI briefing generation
+app.post('/api/insights/generate', async (req, res) => {
+  if (!isFirebaseConfigured || !firestoreDb) {
+    return res.status(500).json({ error: "Firebase not configured. Exclusive Firestore mode is enabled." });
+  }
+
   try {
-    await firestoreDb.collection('ai_briefing').doc(newBrief.date).set(newBrief);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const newBrief = await generateBriefingForDate(todayStr);
     res.json(newBrief);
-  } catch (e) {
-    console.error("Error writing AI briefing to Firestore:", e);
-    res.status(500).json({ error: "Failed to save briefing to Firestore" });
+  } catch (error) {
+    console.error("Error generating insights briefing:", error);
+    res.status(500).json({ error: error.message || "Failed to generate briefing" });
   }
 });
 
@@ -1041,8 +1047,41 @@ async function syncDatabaseToFirestore() {
   }
 }
 
+// Daily Briefing Scheduler
+async function checkAndGenerateDailyBriefing() {
+  try {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const todayStr = now.toISOString().split('T')[0];
+
+    // Check if it is after 4:30 PM (16:30)
+    if (currentHour > 16 || (currentHour === 16 && currentMinute >= 30)) {
+      if (isFirebaseConfigured && firestoreDb) {
+        const doc = await firestoreDb.collection('ai_briefing').doc(todayStr).get();
+        if (!doc.exists) {
+          console.log(`[Scheduler] Auto-generating daily AI kitchen briefing for ${todayStr}...`);
+          const newBrief = await generateBriefingForDate(todayStr);
+          console.log(`[Scheduler] Auto-generation complete. Saved briefing for date: ${newBrief.date}`);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[Scheduler] Error running daily briefing auto-generation check:", err);
+  }
+}
+
+function startDailyBriefingScheduler() {
+  console.log("Daily kitchen briefing scheduler started.");
+  // Run check immediately on startup
+  checkAndGenerateDailyBriefing();
+  // Check every 30 minutes thereafter
+  setInterval(checkAndGenerateDailyBriefing, 30 * 60 * 1000);
+}
+
 // Start Server
 app.listen(PORT, async () => {
   console.log(`CafeGo local server running at http://localhost:${PORT}`);
   await syncDatabaseToFirestore();
+  startDailyBriefingScheduler();
 });
