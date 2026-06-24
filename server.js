@@ -1,12 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
-const dotenv = require('dotenv');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Load environment variables
-dotenv.config();
+// Temporary debug logging
+console.log('Gemini Key Exists:', !!process.env.GEMINI_API_KEY);
 
 const { db: firestoreDb, isConfigured: isFirebaseConfigured, firebaseConfig } = require('./firebase-config');
 
@@ -700,14 +700,17 @@ async function generateBriefingForDate(dateStr) {
   const feedbackText = feedbacks.map(f => `- [Rating: ${f.rating}★] [Item: ${f.menu_item_name}]: "${f.comments}"`).join('\n');
 
   let briefingContent = '';
-  const apiKey = process.env.GEMINI_API_KEY;
+  const rawKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_KEY;
+  const apiKey = (rawKey && rawKey !== 'undefined' && rawKey !== 'null' && rawKey.trim() !== '') ? rawKey.trim() : null;
+
+  // Temporary debug logging
+  console.log('Gemini Key Exists:', !!process.env.GEMINI_API_KEY);
 
   if (apiKey) {
-    try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
-      const prompt = `
+    const prompt = `
 You are an expert culinary auditor and canteen kitchen advisor.
 Below is raw daily feedback submitted by college students regarding the canteen food quality, taste, service, and availability.
 
@@ -722,13 +725,9 @@ Generate a concise, structured Daily Kitchen Briefing for the kitchen staff. Bre
 Make it encouraging but direct. Use Markdown format. Keep it concise so kitchen staff can read it in 1 minute.
 `;
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      briefingContent = response.text();
-    } catch (error) {
-      console.error("Gemini API generation failed, falling back to mock compiler", error);
-      briefingContent = generateLocalSummary(feedbacks);
-    }
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    briefingContent = response.text();
   } else {
     console.log("No GEMINI_API_KEY found, compiling mock summary based on feedback text");
     briefingContent = generateLocalSummary(feedbacks);
