@@ -7,6 +7,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Temporary debug logging
 console.log('Gemini Key Exists:', !!process.env.GEMINI_API_KEY);
+console.log(process.env.GEMINI_API_KEY?.substring(0,10));
 
 const { db: firestoreDb, isConfigured: isFirebaseConfigured, firebaseConfig } = require('./firebase-config');
 
@@ -705,10 +706,12 @@ async function generateBriefingForDate(dateStr) {
 
   // Temporary debug logging
   console.log('Gemini Key Exists:', !!process.env.GEMINI_API_KEY);
+  console.log(process.env.GEMINI_API_KEY?.substring(0,10));
 
   if (apiKey) {
+    // API-key authentication is used here since GoogleGenerativeAI SDK accepts the API Key directly.
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
 You are an expert culinary auditor and canteen kitchen advisor.
