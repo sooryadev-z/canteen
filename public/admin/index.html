@@ -185,8 +185,8 @@
             </section>
 
             <!-- Metric Bento Grid -->
-            <section class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <!-- Revenue -->
+            <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                <!-- Today's Revenue -->
                 <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
                     <div class="flex justify-between items-start mb-4">
                         <div class="p-3 bg-primary/10 rounded-xl">
@@ -197,7 +197,18 @@
                     <p class="text-xs text-on-surface-variant mb-1">Today's Revenue</p>
                     <h4 class="text-2xl font-extrabold text-on-surface" id="stat-revenue">₹0.00</h4>
                 </div>
-                <!-- Orders -->
+                <!-- Monthly Revenue -->
+                <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-emerald-500/10 rounded-xl">
+                            <span class="material-symbols-outlined text-emerald-400">calendar_month</span>
+                        </div>
+                        <span class="text-emerald-400 text-xs font-bold">+15.4%</span>
+                    </div>
+                    <p class="text-xs text-on-surface-variant mb-1">Monthly Revenue</p>
+                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-monthly-revenue">₹0.00</h4>
+                </div>
+                <!-- Orders Today -->
                 <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
                     <div class="flex justify-between items-start mb-4">
                         <div class="p-3 bg-secondary/10 rounded-xl">
@@ -205,8 +216,19 @@
                         </div>
                         <span class="text-secondary text-xs font-bold">+4.2%</span>
                     </div>
-                    <p class="text-xs text-on-surface-variant mb-1">Total Orders</p>
-                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-orders">0</h4>
+                    <p class="text-xs text-on-surface-variant mb-1">Orders Today</p>
+                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-orders-today">0</h4>
+                </div>
+                <!-- Orders This Month -->
+                <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-cyan-500/10 rounded-xl">
+                            <span class="material-symbols-outlined text-cyan-400">shopping_bag</span>
+                        </div>
+                        <span class="text-cyan-400 text-xs font-bold">+10.8%</span>
+                    </div>
+                    <p class="text-xs text-on-surface-variant mb-1">Orders This Month</p>
+                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-orders-month">0</h4>
                 </div>
                 <!-- Users -->
                 <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
@@ -217,7 +239,7 @@
                         <span class="text-tertiary text-xs font-bold">+8.7%</span>
                     </div>
                     <p class="text-xs text-on-surface-variant mb-1">Active Students</p>
-                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-users">4</h4>
+                    <h4 class="text-2xl font-extrabold text-on-surface" id="stat-users">0</h4>
                 </div>
                 <!-- Rating -->
                 <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
@@ -569,12 +591,32 @@
 
         // Calculate and Render Metrics
         function renderDashboard() {
-            // Revenue (total sum of completed/preparing/ready order totals)
-            const revenue = allOrders.reduce((sum, o) => sum + o.total_amount, 0);
-            document.getElementById('stat-revenue').textContent = `₹${revenue.toFixed(2)}`;
+            const today = new Date();
+            const todayStr = today.toDateString();
+
+            // Today's Revenue (total sum of today's completed/preparing/ready/handed over order totals)
+            const todayOrders = allOrders.filter(o => {
+                return o.created_at && new Date(o.created_at).toDateString() === todayStr;
+            });
+            const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total_amount, 0);
+            document.getElementById('stat-revenue').textContent = `₹${todayRevenue.toFixed(2)}`;
+
+            // Monthly Revenue (all order totals placed in the current month)
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            const monthlyOrders = allOrders.filter(o => {
+                if (!o.created_at) return false;
+                const oDate = new Date(o.created_at);
+                return oDate.getMonth() === currentMonth && oDate.getFullYear() === currentYear;
+            });
+            const monthlyRevenue = monthlyOrders.reduce((sum, o) => sum + o.total_amount, 0);
+            document.getElementById('stat-monthly-revenue').textContent = `₹${monthlyRevenue.toFixed(2)}`;
             
-            // Total Orders count
-            document.getElementById('stat-orders').textContent = allOrders.length;
+            // Orders Today count
+            document.getElementById('stat-orders-today').textContent = todayOrders.length;
+            
+            // Orders This Month count
+            document.getElementById('stat-orders-month').textContent = monthlyOrders.length;
             
             // Avg rating from reviews
             const avgRating = allFeedback.length > 0
@@ -582,9 +624,9 @@
                 : 4.8;
             document.getElementById('stat-rating').textContent = `${avgRating.toFixed(1)}/5.0`;
 
-            // Active students (unique users who placed orders)
-            const uniqueStudents = new Set(allOrders.map(o => o.user_id));
-            document.getElementById('stat-users').textContent = Math.max(uniqueStudents.size, 4);
+            // Active students (unique users who placed orders today)
+            const uniqueStudentsToday = new Set(todayOrders.map(o => o.user_id));
+            document.getElementById('stat-users').textContent = uniqueStudentsToday.size;
 
             // Render Top Rated Items (sorted by rating descending)
             const sortedMenu = [...allMenu].sort((a, b) => (b.rating || 0) - (a.rating || 0));
