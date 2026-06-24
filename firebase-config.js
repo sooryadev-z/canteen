@@ -1,4 +1,5 @@
-const { initializeApp: initializeAdminApp, cert } = require('firebase-admin');
+const admin = require('firebase-admin');
+const cert = admin.credential.cert;
 const { getFirestore } = require('firebase-admin/firestore');
 const { getAuth: getAdminAuth } = require('firebase-admin/auth');
 const firebaseCompat = require('firebase/compat/app');
@@ -30,7 +31,7 @@ try {
   // Option 1: Try local serviceAccountKey.json first (development environment)
   if (fs.existsSync(serviceAccountPath)) {
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-    const adminApp = initializeAdminApp({
+    const adminApp = admin.initializeApp({
       credential: cert(serviceAccount)
     });
     db = getFirestore(adminApp);
@@ -41,7 +42,7 @@ try {
   // Option 2: Try FIREBASE_SERVICE_ACCOUNT environment variable (Vercel / Production environment)
   else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    const adminApp = initializeAdminApp({
+    const adminApp = admin.initializeApp({
       credential: cert(serviceAccount)
     });
     db = getFirestore(adminApp);
@@ -51,7 +52,7 @@ try {
   }
   // Option 3: Try individual env variables (Vercel / Production environment)
   else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-    const adminApp = initializeAdminApp({
+    const adminApp = admin.initializeApp({
       credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,

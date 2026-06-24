@@ -39,7 +39,7 @@ async function runImporter() {
 
   // 2. Initialize Firebase Admin SDK
   try {
-    const { cert } = admin;
+    const cert = admin.credential.cert;
     admin.initializeApp({
       credential: cert(serviceAccount)
     });
