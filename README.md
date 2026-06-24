@@ -59,7 +59,7 @@ graph TD
 * **Dual Login System**: Keeps the existing College ID/Badge + Password login system fully active, alongside a new optional Firebase Google Sign-In button ("Continue with Google").
 * **Role-Based Logins**: Supports Students, Kitchen Staff, and Administrators.
 * **Google Sign-In Email Restrictions**:
-  * **Students**: Only permits whitelisted Student accounts: `lemmefind45@gmail.com` and `dranzer4545@gmail.com`. Rejects all other Google accounts.
+  * **Students**: Only permits whitelisted Student accounts: `lemmefind45@gmail.com`, `dranzer4545@gmail.com`, and `btechvazhaane@gmail.com`. Rejects all other Google accounts.
   * **Administrators**: Only permits whitelisted Admin account: `sooryadev.s.y@gmail.com` (which is seeded automatically in the Firestore `admins` collection). Rejects all other accounts.
   * **Kitchen Staff**: Google Sign-In is hidden for Kitchen staff; they must continue using their badge codes (`chef-[name]-YY`).
 * **Visual Transitions**: Utilizes smooth custom animations and a premium SVG checkmark screen upon successful credentials validation.

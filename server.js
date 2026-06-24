@@ -198,7 +198,7 @@ app.post('/api/auth/google-signin', async (req, res) => {
 
     if (role === 'student') {
       // Only allow the following Google accounts for Student access
-      const allowedStudents = ['lemmefind45@gmail.com', 'dranzer4545@gmail.com'];
+      const allowedStudents = ['lemmefind45@gmail.com', 'dranzer4545@gmail.com', 'btechvazhaane@gmail.com'];
       if (!allowedStudents.includes(email)) {
         return res.status(403).json({ 
           success: false, 
