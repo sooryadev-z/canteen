@@ -111,7 +111,7 @@
     <header class="flex justify-between items-center px-margin-mobile h-16 w-full fixed top-0 z-50 bg-background/80 backdrop-blur-md border-b border-white/5">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary">
-                <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADEUPr8GJpMcuQcACnK1Hs9JierNenB8TwdaZXtYELr1t5sn-3qYDS-DZUYeXKBKcRCZyZYtn1BySwBeQv6l4s79eJOyjBUwp7lzPIJGPlDRMuxV3IbULJvnRM2xeZIi6ZAu5KhslvnKDnW-VIvei5ONFZJ3sUxH3Fsn_v4uUnXXcPUY2_ypFxJCWqisW2bfjuop02HJb1VVexAr4yuZ3UbaDj74NQnTsjReJLXSJdSPvykSZvCyqTLbyoue7RcXoUPwJ-C-0t9zN2"/>
+                <img id="student-avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADEUPr8GJpMcuQcACnK1Hs9JierNenB8TwdaZXtYELr1t5sn-3qYDS-DZUYeXKBKcRCZyZYtn1BySwBeQv6l4s79eJOyjBUwp7lzPIJGPlDRMuxV3IbULJvnRM2xeZIi6ZAu5KhslvnKDnW-VIvei5ONFZJ3sUxH3Fsn_v4uUnXXcPUY2_ypFxJCWqisW2bfjuop02HJb1VVexAr4yuZ3UbaDj74NQnTsjReJLXSJdSPvykSZvCyqTLbyoue7RcXoUPwJ-C-0t9zN2"/>
             </div>
             <span class="font-bold text-lg text-primary">CafeGo</span>
         </div>
@@ -255,7 +255,13 @@
         // Check session user
         const loggedInUser = JSON.parse(sessionStorage.getItem('user'));
         if (loggedInUser) {
-            document.getElementById('student-greeting').textContent = `Hello, ${loggedInUser.name}`;
+            document.getElementById('student-greeting').innerHTML = `Hello, ${loggedInUser.name} <span class="text-xs px-2.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold ml-2 font-sans align-middle">Student</span>`;
+            if (loggedInUser.picture || loggedInUser.profilePhoto) {
+                const avatarImg = document.getElementById('student-avatar');
+                if (avatarImg) {
+                    avatarImg.src = loggedInUser.picture || loggedInUser.profilePhoto;
+                }
+            }
         }
 
         // Fetch menu list fallback

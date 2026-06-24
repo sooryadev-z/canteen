@@ -56,11 +56,12 @@ graph TD
 ## 🌟 Core Portals & Key Features
 
 ### 1. Unified Authentication Portal (`public/index.html`)
-* **Role-Based Logins**: Support for Students, Kitchen Staff, and Administrators.
-* **Format & Badge Validation**:
-  * **Students**: Validates college email format (`username@lmcst.ac.in`).
-  * **Kitchen Staff**: Validates badge code format (`chef-[name]-YY`).
-  * **Admin Staff**: Validates admin badge code format (`admin-[name]-YY`).
+* **Dual Login System**: Keeps the existing College ID/Badge + Password login system fully active, alongside a new optional Firebase Google Sign-In button ("Continue with Google").
+* **Role-Based Logins**: Supports Students, Kitchen Staff, and Administrators.
+* **Google Sign-In Domain Restrictions**:
+  * **Students**: Only permits authorized college domains (e.g., `@lmcst.ac.in`). Rejects all other Google accounts.
+  * **Administrators**: Whitelists specific admin email accounts (e.g., `owner@gmail.com`, `canteenadmin@gmail.com`, `admin@lmcst.ac.in`) registered in the Firestore `admins` collection. Rejects all other accounts.
+  * **Kitchen Staff**: Google Sign-In is hidden for Kitchen staff; they must continue using their badge codes (`chef-[name]-YY`).
 * **Visual Transitions**: Utilizes smooth custom animations and a premium SVG checkmark screen upon successful credentials validation.
 
 ### 2. Student Portal (`public/student/*`)
@@ -198,6 +199,41 @@ Atomically written audit records.
 }
 ```
 
+### 7. `admins`
+Whitelisted admin email addresses for Google Sign-In.
+```json
+{
+  "email": "owner@gmail.com",
+  "role": "admin",
+  "created_at": "2026-06-24T17:00:00.000Z"
+}
+```
+
+### 8. `students`
+Student profiles created or updated automatically via Google Sign-In.
+```json
+{
+  "name": "Arjun",
+  "email": "arjun@lmcst.ac.in",
+  "profilePhoto": "https://lh3.googleusercontent.com/...",
+  "role": "student",
+  "lastLogin": "2026-06-24T17:05:00.000Z"
+}
+```
+
+### 9. `users`
+Combined student and admin profiles synced for session retrieval and billing metrics.
+```json
+{
+  "name": "Alex Rivera",
+  "email": "owner@gmail.com",
+  "profilePhoto": "https://lh3.googleusercontent.com/...",
+  "role": "admin",
+  "lastLogin": "2026-06-24T17:06:00.000Z"
+}
+```
+
+
 ---
 
 ## ⚡ Production-Ready Google Gemini AI Core
@@ -222,6 +258,9 @@ CafeGo integrates the `@google/generative-ai` SDK initialized with the `gemini-3
 * **`POST /api/auth/validate-id`**: Validates credentials format and checks password against the DB.
   * **Payload**: `{ "collegeId": "arjun@lmcst.ac.in", "role": "student", "password": "password123" }`
   * **Response**: `200 OK` `{ "valid": true, "user": { "role": "student", "email": "arjun@lmcst.ac.in", ... } }`
+* **`POST /api/auth/google-signin`**: Verifies Google ID token from Firebase, checks role-based access list or domain, and issues session data.
+  * **Payload**: `{ "idToken": "eyJhbG...", "role": "student" }`
+  * **Response**: `200 OK` `{ "success": true, "user": { "collegeId": "arjun@lmcst.ac.in", "name": "Arjun", "email": "arjun@lmcst.ac.in", "role": "student", "picture": "..." } }`
 
 ### 🍔 Menu CRUD
 * **`GET /api/menu`**: Retrieves the active canteen menu list.
@@ -322,3 +361,18 @@ In your Vercel Project Settings under **Environment Variables**, configure the f
   * **`FIREBASE_PROJECT_ID`**
   * **`FIREBASE_CLIENT_EMAIL`**
   * **`FIREBASE_PRIVATE_KEY`** (Ensure newlines are escaped as `\n`).
+
+---
+
+## 🔐 Firebase Google Sign-In Setup
+
+To make Google Sign-In work in production or development:
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Select your project and navigate to **Authentication**.
+3. Under the **Sign-in method** tab, click **Add new provider** and select **Google**.
+4. Enable the provider, select a project support email, and save.
+5. In Firestore, make sure the `admins` collection contains the emails of approved administrators. The server automatically seeds the following on startup:
+   - `owner@gmail.com`
+   - `canteenadmin@gmail.com`
+   - `admin@lmcst.ac.in`
+6. Make sure to update your Firestore security rules (provided in `firestore.rules`) to enforce role checks.

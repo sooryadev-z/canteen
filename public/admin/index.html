@@ -137,11 +137,11 @@
         <div class="px-6 mt-auto">
             <div class="flex items-center gap-3 p-3 glass-card rounded-xl">
                 <div class="w-10 h-10 rounded-full overflow-hidden border border-primary/30">
-                    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAROYT6QNY6ighD1L9SHY8PshLtOK_OGYLMJvNM7yF3KvGPpaHOPA8Lc1FbSKzjhLUt0B-KHOxT5mtICVcNgZ-YVr7LUTPNId8JKnmtoqJLBUt-n4NrqFXu9M9SAdo6jb3SHrm9AeZZc2Lxi2OUpS1ShvlJjNCl39CB4yBarqkOkFGCNQEY9lyKCzC6KWmjJWJ_2bNv-s9u8-nh7KOwNOpwhjZRze_YDfSYB9V-4UpB1JP2wBL0YIcGrM370LVaMrL_HeHHtgdaQV-p">
+                    <img id="admin-avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAROYT6QNY6ighD1L9SHY8PshLtOK_OGYLMJvNM7yF3KvGPpaHOPA8Lc1FbSKzjhLUt0B-KHOxT5mtICVcNgZ-YVr7LUTPNId8JKnmtoqJLBUt-n4NrqFXu9M9SAdo6jb3SHrm9AeZZc2Lxi2OUpS1ShvlJjNCl39CB4yBarqkOkFGCNQEY9lyKCzC6KWmjJWJ_2bNv-s9u8-nh7KOwNOpwhjZRze_YDfSYB9V-4UpB1JP2wBL0YIcGrM370LVaMrL_HeHHtgdaQV-p">
                 </div>
                 <div>
                     <p class="text-xs font-semibold text-on-surface" id="admin-name">Alex Rivera</p>
-                    <p class="text-[9px] uppercase tracking-widest text-primary font-bold">Manager</p>
+                    <p class="text-[9px] uppercase tracking-widest text-primary font-bold" id="admin-role-badge">Manager</p>
                 </div>
             </div>
         </div>
@@ -528,6 +528,13 @@
         const loggedInUser = JSON.parse(sessionStorage.getItem('user'));
         if (loggedInUser && loggedInUser.role === 'admin') {
             document.getElementById('admin-name').textContent = loggedInUser.name;
+            document.getElementById('admin-role-badge').textContent = `Manager (${loggedInUser.role.toUpperCase()})`;
+            if (loggedInUser.picture || loggedInUser.profilePhoto) {
+                const avatarImg = document.getElementById('admin-avatar');
+                if (avatarImg) {
+                    avatarImg.src = loggedInUser.picture || loggedInUser.profilePhoto;
+                }
+            }
         }
 
         // Switch Sidebar Tabs
@@ -576,7 +583,9 @@
 
                 // Logs
                 try {
-                    const logsRes = await fetch('/api/inventory/logs');
+                    const logsRes = await fetch('/api/inventory/logs', {
+                        headers: { 'X-User-Email': loggedInUser ? loggedInUser.email : '' }
+                    });
                     allLogs = await logsRes.json();
                     renderLogs(allLogs);
                 } catch (logErr) {
@@ -751,7 +760,10 @@
             try {
                 const res = await fetch('/api/menu', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-User-Email': loggedInUser ? loggedInUser.email : ''
+                    },
                     body: JSON.stringify(payload)
                 });
                 
@@ -769,7 +781,8 @@
             if (!confirm('Are you sure you want to delete this menu item?')) return;
             try {
                 const res = await fetch(`/api/menu/${id}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 'X-User-Email': loggedInUser ? loggedInUser.email : '' }
                 });
                 if (res.ok) refreshDashboard();
             } catch (err) {
@@ -785,7 +798,10 @@
             try {
                 const res = await fetch(`/api/menu/${id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-User-Email': loggedInUser ? loggedInUser.email : ''
+                    },
                     body: JSON.stringify({ price: parseFloat(newPrice) })
                 });
                 if (res.ok) refreshDashboard();
@@ -805,7 +821,9 @@
         async function loadAISummary() {
             const container = document.getElementById('ai-summary-box');
             try {
-                const res = await fetch('/api/insights/summary');
+                const res = await fetch('/api/insights/summary', {
+                    headers: { 'X-User-Email': loggedInUser ? loggedInUser.email : '' }
+                });
                 const summary = await res.json();
                 
                 // Format content (simple Markdown parsing for UI rendering)
@@ -833,7 +851,10 @@
             btn.innerHTML = `<span class="material-symbols-outlined text-xs animate-spin">progress_activity</span> Analyzing Feedback...`;
             
             try {
-                const res = await fetch('/api/insights/generate', { method: 'POST' });
+                const res = await fetch('/api/insights/generate', { 
+                    method: 'POST',
+                    headers: { 'X-User-Email': loggedInUser ? loggedInUser.email : '' }
+                });
                 if (res.ok) {
                     await loadAISummary();
                 }
@@ -1203,7 +1224,10 @@
             try {
                 const res = await fetch(`/api/menu/${itemId}/set-stock`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-User-Email': loggedInUser ? loggedInUser.email : ''
+                    },
                     body: JSON.stringify({
                         stock: stockVal,
                         lowStockThreshold: thresholdVal,
@@ -1236,7 +1260,8 @@
             if (!confirm("Are you sure you want to reset today's sales count for all items?")) return;
             try {
                 const res = await fetch('/api/menu/reset-sales', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: { 'X-User-Email': loggedInUser ? loggedInUser.email : '' }
                 });
                 if (res.ok) {
                     refreshDashboard();

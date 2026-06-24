@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Check if the user is authenticated with Firebase
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if the user is an admin by checking the admins collection
+    function isAdmin() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+    }
+    
+    // Check if the user is a student with the authorized college email domain
+    function isStudent() {
+      return isAuthenticated() && request.auth.token.email.endsWith('@lmcst.ac.in');
+    }
+
+    // Admins Collection: Read by authenticated users, write only by admins
+    match /admins/{email} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Students Collection: Read by authenticated users, write by admin or self
+    match /students/{email} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || (isAuthenticated() && request.auth.token.email == email);
+    }
+
+    // Users Collection: Read by authenticated users, write by admin or self
+    match /users/{email} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || (isAuthenticated() && request.auth.token.email == email);
+    }
+
+    // Menu Items: Anyone can read, only admins can write
+    match /menu_items/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders: Admins can do anything; students can read, create, and update their own orders
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (isAuthenticated() && (resource == null || resource.data.user_email == request.auth.token.email));
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.user_email == request.auth.token.email);
+    }
+
+    // Feedback: Admins can read/write; students can write feedback
+    match /feedback/{feedbackId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    // Inventory Logs: Only admins can read/write
+    match /inventory_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // AI Briefing: Staff (Admin/Kitchen) can read/write
+    match /ai_briefing/{date} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

@@ -43,6 +43,227 @@ app.get('/api/config', (req, res) => {
 });
 
 // ==========================================
+// FIREBASE ADMIN & GOOGLE AUTH SERVICE
+// ==========================================
+const admin = require('firebase-admin');
+
+// Function to seed approved admin emails into Firestore
+async function seedAdmins() {
+  if (!isFirebaseConfigured || !firestoreDb) {
+    console.log("Firebase not fully configured. Skipping admin whitelist seeding.");
+    return;
+  }
+  try {
+    const adminEmails = ['owner@gmail.com', 'canteenadmin@gmail.com', 'admin@lmcst.ac.in'];
+    const adminsCol = firestoreDb.collection('admins');
+    for (const email of adminEmails) {
+      const docRef = adminsCol.doc(email);
+      const doc = await docRef.get();
+      if (!doc.exists) {
+        console.log(`[Firestore Seeding] Adding approved admin email: ${email}`);
+        await docRef.set({
+          email: email,
+          role: 'admin',
+          created_at: new Date().toISOString()
+        });
+      }
+    }
+    console.log("[Firestore Seeding] Admin whitelist check complete.");
+  } catch (error) {
+    console.error("Error seeding admins collection:", error);
+  }
+}
+
+// Middleware to require Admin access (checks X-User-Email header)
+async function requireAdmin(req, res, next) {
+  const email = req.headers['x-user-email'];
+  if (!email) {
+    return res.status(401).json({ error: "Unauthorized: Missing X-User-Email header" });
+  }
+
+  try {
+    if (isFirebaseConfigured && firestoreDb) {
+      // 1. Check in admins collection
+      const adminDoc = await firestoreDb.collection('admins').doc(email).get();
+      if (adminDoc.exists) {
+        return next();
+      }
+      
+      // 2. Check in college_ids collection for legacy Admin support
+      const collegeIdsSnapshot = await firestoreDb.collection('college_ids').where('email', '==', email).get();
+      if (!collegeIdsSnapshot.empty) {
+        const userDoc = collegeIdsSnapshot.docs[0].data();
+        if (userDoc.role === 'admin') {
+          return next();
+        }
+      }
+    } else {
+      // Local fallback mode using db.json
+      const db = await readDB();
+      const isAdminInAdmins = ['owner@gmail.com', 'canteenadmin@gmail.com', 'admin@lmcst.ac.in'].includes(email);
+      if (isAdminInAdmins) {
+        return next();
+      }
+      const collegeUser = (db.college_ids || []).find(u => u.email === email);
+      if (collegeUser && collegeUser.role === 'admin') {
+        return next();
+      }
+    }
+    
+    return res.status(403).json({ error: "Forbidden: Admin access required" });
+  } catch (error) {
+    console.error("Error in requireAdmin middleware:", error);
+    return res.status(500).json({ error: "Authentication check failed" });
+  }
+}
+
+// Middleware to require Staff (Kitchen/Chef or Admin) access (checks X-User-Email header)
+async function requireStaff(req, res, next) {
+  const email = req.headers['x-user-email'];
+  if (!email) {
+    return res.status(401).json({ error: "Unauthorized: Missing X-User-Email header" });
+  }
+
+  try {
+    if (isFirebaseConfigured && firestoreDb) {
+      // 1. Check if they are an admin
+      const adminDoc = await firestoreDb.collection('admins').doc(email).get();
+      if (adminDoc.exists) {
+        return next();
+      }
+
+      // 2. Check college_ids for chef/admin role
+      const collegeIdsSnapshot = await firestoreDb.collection('college_ids').where('email', '==', email).get();
+      if (!collegeIdsSnapshot.empty) {
+        const userDoc = collegeIdsSnapshot.docs[0].data();
+        if (userDoc.role === 'chef' || userDoc.role === 'admin' || userDoc.role === 'kitchen') {
+          return next();
+        }
+      }
+    } else {
+      // Local fallback mode
+      const isAdminInAdmins = ['owner@gmail.com', 'canteenadmin@gmail.com', 'admin@lmcst.ac.in'].includes(email);
+      if (isAdminInAdmins) {
+        return next();
+      }
+      const db = await readDB();
+      const collegeUser = (db.college_ids || []).find(u => u.email === email);
+      if (collegeUser && (collegeUser.role === 'chef' || collegeUser.role === 'admin' || collegeUser.role === 'kitchen')) {
+        return next();
+      }
+    }
+
+    return res.status(403).json({ error: "Forbidden: Staff access required" });
+  } catch (error) {
+    console.error("Error in requireStaff middleware:", error);
+    return res.status(500).json({ error: "Authentication check failed" });
+  }
+}
+
+// Backend Google Sign-In endpoint
+app.post('/api/auth/google-signin', async (req, res) => {
+  const { idToken, role } = req.body;
+  if (!idToken || !role) {
+    return res.status(400).json({ success: false, error: 'idToken and role are required' });
+  }
+
+  try {
+    if (!isFirebaseConfigured || !firestoreDb) {
+      return res.status(500).json({ success: false, error: 'Firebase is not configured on the backend.' });
+    }
+
+    // Verify token using Firebase Admin SDK
+    const adminAuth = admin.auth();
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const { email, name, picture } = decodedToken;
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email not provided in token' });
+    }
+
+    const lastLogin = new Date().toISOString();
+
+    if (role === 'student') {
+      // Allow only authorized college email domains (e.g., @lmcst.ac.in)
+      if (!email.endsWith('@lmcst.ac.in')) {
+        return res.status(403).json({ 
+          success: false, 
+          error: `Unauthorized: Student access restricted to authorized college domain (@lmcst.ac.in)` 
+        });
+      }
+
+      // Automatically create or update student profile in Firestore
+      const studentData = {
+        name: name || email.split('@')[0],
+        email: email,
+        profilePhoto: picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+        role: 'student',
+        lastLogin: lastLogin
+      };
+
+      // Set/merge document in students and users collections
+      await firestoreDb.collection('students').doc(email).set(studentData, { merge: true });
+      await firestoreDb.collection('users').doc(email).set(studentData, { merge: true });
+
+      const userDetails = {
+        collegeId: email,
+        name: studentData.name,
+        email: email,
+        role: 'student',
+        picture: studentData.profilePhoto,
+        id: email
+      };
+
+      return res.json({ success: true, message: 'Google Authentication successful', user: userDetails });
+
+    } else if (role === 'admin') {
+      // Only users whose email exists in the admins collection can access the Admin Dashboard
+      const adminDoc = await firestoreDb.collection('admins').doc(email).get();
+      if (!adminDoc.exists) {
+        return res.status(403).json({ 
+          success: false, 
+          error: `Access Denied: Email "${email}" is not an approved Admin account.` 
+        });
+      }
+
+      const adminData = {
+        name: name || email.split('@')[0],
+        email: email,
+        profilePhoto: picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+        role: 'admin',
+        lastLogin: lastLogin
+      };
+
+      await firestoreDb.collection('users').doc(email).set(adminData, { merge: true });
+
+      const userDetails = {
+        collegeId: email,
+        name: adminData.name,
+        email: email,
+        role: 'admin',
+        picture: adminData.profilePhoto,
+        id: email
+      };
+
+      return res.json({ success: true, message: 'Google Authentication successful', user: userDetails });
+
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid login role requested.' });
+    }
+
+  } catch (error) {
+    console.error("Error in google-signin endpoint:", error);
+    let errMsg = "Authentication service encountered an error";
+    if (error.code === 'auth/id-token-expired') {
+      errMsg = "Google login session expired. Please sign in again.";
+    } else if (error.code === 'auth/argument-error') {
+      errMsg = "Invalid authentication token format.";
+    }
+    return res.status(500).json({ success: false, error: errMsg });
+  }
+});
+
+// ==========================================
 // MENU API ENDPOINTS
 // ==========================================
 
@@ -68,7 +289,7 @@ app.get('/api/menu', async (req, res) => {
 });
 
 // Add menu item
-app.post('/api/menu', async (req, res) => {
+app.post('/api/menu', requireAdmin, async (req, res) => {
   if (!isFirebaseConfigured || !firestoreDb) {
     return res.status(500).json({ error: "Firebase not configured. Exclusive Firestore mode is enabled." });
   }
@@ -116,7 +337,7 @@ app.post('/api/menu', async (req, res) => {
 });
 
 // Update menu item (availability, price, category, stock text)
-app.put('/api/menu/:id', async (req, res) => {
+app.put('/api/menu/:id', requireAdmin, async (req, res) => {
   if (!isFirebaseConfigured || !firestoreDb) {
     return res.status(500).json({ error: "Firebase not configured. Exclusive Firestore mode is enabled." });
   }
@@ -144,7 +365,7 @@ app.put('/api/menu/:id', async (req, res) => {
 });
 
 // Delete menu item
-app.delete('/api/menu/:id', async (req, res) => {
+app.delete('/api/menu/:id', requireAdmin, async (req, res) => {
   if (!isFirebaseConfigured || !firestoreDb) {
     return res.status(500).json({ error: "Firebase not configured. Exclusive Firestore mode is enabled." });
   }
@@ -318,7 +539,7 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // Update order status
-app.put('/api/orders/:id', async (req, res) => {
+app.put('/api/orders/:id', requireStaff, async (req, res) => {
   if (!isFirebaseConfigured || !firestoreDb) {
     return res.status(500).json({ error: "Firebase not configured. Exclusive Firestore mode is enabled." });
   }
@@ -391,7 +612,7 @@ app.put('/api/orders/:id', async (req, res) => {
 // ==========================================
 
 // Adjust Stock (Add/Reduce relative)
-app.post('/api/menu/:id/adjust-stock', async (req, res) => {
+app.post('/api/menu/:id/adjust-stock', requireStaff, async (req, res) => {
   if (!isFirebaseConfigured || !firestoreDb) {
     return res.status(500).json({ error: "Firebase not configured." });
   }
@@ -460,7 +681,7 @@ app.post('/api/menu/:id/adjust-stock', async (req, res) => {
 });
 
 // Manual Stock & Threshold Update
-app.post('/api/menu/:id/set-stock', async (req, res) => {
+app.post('/api/menu/:id/set-stock', requireStaff, async (req, res) => {
   if (!isFirebaseConfigured || !firestoreDb) {
     return res.status(500).json({ error: "Firebase not configured." });
   }
@@ -536,7 +757,7 @@ app.post('/api/menu/:id/set-stock', async (req, res) => {
 
 
 // Fetch recent inventory audit trail logs
-app.get('/api/inventory/logs', async (req, res) => {
+app.get('/api/inventory/logs', requireAdmin, async (req, res) => {
   if (!isFirebaseConfigured || !firestoreDb) {
     return res.status(500).json({ error: "Firebase not configured." });
   }
@@ -557,7 +778,7 @@ app.get('/api/inventory/logs', async (req, res) => {
 });
 
 // Reset Daily Sales Count
-app.post('/api/menu/reset-sales', async (req, res) => {
+app.post('/api/menu/reset-sales', requireAdmin, async (req, res) => {
   if (!isFirebaseConfigured || !firestoreDb) {
     return res.status(500).json({ error: "Firebase not configured." });
   }
@@ -657,7 +878,7 @@ app.post('/api/feedback', async (req, res) => {
 // ==========================================
 
 // Fetch latest briefing
-app.get('/api/insights/summary', async (req, res) => {
+app.get('/api/insights/summary', requireStaff, async (req, res) => {
   try {
     if (isFirebaseConfigured && firestoreDb) {
       // 1. Fetch latest cached briefing
@@ -923,7 +1144,7 @@ app.get('/api/test-gemini', async (req, res) => {
 });
 
 // Trigger new AI briefing generation
-app.post('/api/insights/generate', async (req, res) => {
+app.post('/api/insights/generate', requireStaff, async (req, res) => {
   try {
     const todayStr = new Date().toISOString().split('T')[0];
     const newBrief = await generateBriefingForDate(todayStr);
@@ -1258,5 +1479,6 @@ function startDailyBriefingScheduler() {
 app.listen(PORT, async () => {
   console.log(`CafeGo local server running at http://localhost:${PORT}`);
   await syncDatabaseToFirestore();
+  await seedAdmins();
   startDailyBriefingScheduler();
 });
