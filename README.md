@@ -33,7 +33,7 @@ CafeGo is a modern web application designed to streamline meal pre-ordering, inv
 * **Database & Storage:**
   * **Firebase Firestore:** Enterprise-grade Cloud Firestore implementation with robust transactions for inventory safety, order states, and auditing logs.
   * **JSON Fallback:** Operates via a local `db.json` file when Firebase configuration isn't supplied or initialized.
-* **AI Integration:** Google Gemini API (`gemini-1.5-flash`) via the `@google/generative-ai` SDK. Automatically analyses daily student comments to extract positive highlights, kitchen alerts, and suggestions (falls back to a rule-based Local NLP analyzer if no API Key is set).
+* **AI Integration:** Google Gemini API (`gemini-3-flash-preview`) via the `@google/generative-ai` SDK. Automatically analyses daily student comments to extract positive highlights, kitchen alerts, and suggestions (falls back to a rule-based Local NLP analyzer if no API Key is set).
 
 ---
 

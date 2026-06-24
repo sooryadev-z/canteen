@@ -3,11 +3,16 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Temporary debug logging
 console.log('Gemini Key Exists:', !!process.env.GEMINI_API_KEY);
 console.log(process.env.GEMINI_API_KEY?.substring(0,10));
+
+// Initialize Gemini client globally
+const rawKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_KEY;
+const apiKey = (rawKey && rawKey !== 'undefined' && rawKey !== 'null' && rawKey.trim() !== '') ? rawKey.trim() : null;
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const { db: firestoreDb, isConfigured: isFirebaseConfigured, firebaseConfig } = require('./firebase-config');
 
@@ -701,17 +706,12 @@ async function generateBriefingForDate(dateStr) {
   const feedbackText = feedbacks.map(f => `- [Rating: ${f.rating}★] [Item: ${f.menu_item_name}]: "${f.comments}"`).join('\n');
 
   let briefingContent = '';
-  const rawKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_KEY;
-  const apiKey = (rawKey && rawKey !== 'undefined' && rawKey !== 'null' && rawKey.trim() !== '') ? rawKey.trim() : null;
 
-  // Temporary debug logging
-  console.log('Gemini Key Exists:', !!process.env.GEMINI_API_KEY);
-  console.log(process.env.GEMINI_API_KEY?.substring(0,10));
+  if (genAI) {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
-  if (apiKey) {
-    const ai = new GoogleGenAI({ apiKey });
-
-    const prompt = `
+      const prompt = `
 You are an expert culinary auditor and canteen kitchen advisor.
 Below is raw daily feedback submitted by college students regarding the canteen food quality, taste, service, and availability.
 
@@ -726,11 +726,13 @@ Generate a concise, structured Daily Kitchen Briefing for the kitchen staff. Bre
 Make it encouraging but direct. Use Markdown format. Keep it concise so kitchen staff can read it in 1 minute.
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt
-    });
-    briefingContent = response.text;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      briefingContent = response.text();
+    } catch (error) {
+      console.error("Gemini briefing generation failed, falling back to local summary:", error);
+      briefingContent = generateLocalSummary(feedbacks);
+    }
   } else {
     console.log("No GEMINI_API_KEY found, compiling mock summary based on feedback text");
     briefingContent = generateLocalSummary(feedbacks);
@@ -748,21 +750,16 @@ Make it encouraging but direct. Use Markdown format. Keep it concise so kitchen 
 // Minimal test endpoint to verify Gemini API connection
 app.get('/api/test-gemini', async (req, res) => {
   console.log('Test endpoint hit. Key prefix:', process.env.GEMINI_API_KEY?.substring(0, 10));
-  
-  const rawKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_KEY;
-  const apiKey = (rawKey && rawKey !== 'undefined' && rawKey !== 'null' && rawKey.trim() !== '') ? rawKey.trim() : null;
 
-  if (!apiKey) {
+  if (!genAI) {
     return res.status(400).json({ error: "No GEMINI_API_KEY found in environment." });
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: 'Hello Gemini'
-    });
-    res.json({ success: true, text: response.text });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+    const result = await model.generateContent('Hello Gemini');
+    const response = await result.response;
+    res.json({ success: true, text: response.text() });
   } catch (error) {
     console.error("Test Gemini endpoint failed:", error);
     res.status(500).json({
