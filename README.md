@@ -58,9 +58,9 @@ graph TD
 ### 1. Unified Authentication Portal (`public/index.html`)
 * **Dual Login System**: Keeps the existing College ID/Badge + Password login system fully active, alongside a new optional Firebase Google Sign-In button ("Continue with Google").
 * **Role-Based Logins**: Supports Students, Kitchen Staff, and Administrators.
-* **Google Sign-In Domain Restrictions**:
-  * **Students**: Only permits authorized college domains (e.g., `@lmcst.ac.in`). Rejects all other Google accounts.
-  * **Administrators**: Whitelists specific admin email accounts (e.g., `owner@gmail.com`, `canteenadmin@gmail.com`, `admin@lmcst.ac.in`) registered in the Firestore `admins` collection. Rejects all other accounts.
+* **Google Sign-In Email Restrictions**:
+  * **Students**: Only permits whitelisted Student accounts: `lemmefind45@gmail.com` and `dranzer4545@gmail.com`. Rejects all other Google accounts.
+  * **Administrators**: Only permits whitelisted Admin account: `sooryadev.s.y@gmail.com` (which is seeded automatically in the Firestore `admins` collection). Rejects all other accounts.
   * **Kitchen Staff**: Google Sign-In is hidden for Kitchen staff; they must continue using their badge codes (`chef-[name]-YY`).
 * **Visual Transitions**: Utilizes smooth custom animations and a premium SVG checkmark screen upon successful credentials validation.
 
@@ -371,8 +371,9 @@ To make Google Sign-In work in production or development:
 2. Select your project and navigate to **Authentication**.
 3. Under the **Sign-in method** tab, click **Add new provider** and select **Google**.
 4. Enable the provider, select a project support email, and save.
-5. In Firestore, make sure the `admins` collection contains the emails of approved administrators. The server automatically seeds the following on startup:
+5. In Firestore, make sure the `admins` collection contains the emails of approved administrators. The server automatically seeds the following accounts on startup (including the primary admin):
    - `owner@gmail.com`
    - `canteenadmin@gmail.com`
    - `admin@lmcst.ac.in`
+   - `sooryadev.s.y@gmail.com`
 6. Make sure to update your Firestore security rules (provided in `firestore.rules`) to enforce role checks.

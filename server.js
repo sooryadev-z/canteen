@@ -45,7 +45,7 @@ app.get('/api/config', (req, res) => {
 // ==========================================
 // FIREBASE ADMIN & GOOGLE AUTH SERVICE
 // ==========================================
-const admin = require('firebase-admin');
+const { getAuth } = require('firebase-admin/auth');
 
 // Function to seed approved admin emails into Firestore
 async function seedAdmins() {
@@ -54,7 +54,7 @@ async function seedAdmins() {
     return;
   }
   try {
-    const adminEmails = ['owner@gmail.com', 'canteenadmin@gmail.com', 'admin@lmcst.ac.in'];
+    const adminEmails = ['owner@gmail.com', 'canteenadmin@gmail.com', 'admin@lmcst.ac.in', 'sooryadev.s.y@gmail.com'];
     const adminsCol = firestoreDb.collection('admins');
     for (const email of adminEmails) {
       const docRef = adminsCol.doc(email);
@@ -100,7 +100,7 @@ async function requireAdmin(req, res, next) {
     } else {
       // Local fallback mode using db.json
       const db = await readDB();
-      const isAdminInAdmins = ['owner@gmail.com', 'canteenadmin@gmail.com', 'admin@lmcst.ac.in'].includes(email);
+      const isAdminInAdmins = ['owner@gmail.com', 'canteenadmin@gmail.com', 'admin@lmcst.ac.in', 'sooryadev.s.y@gmail.com'].includes(email);
       if (isAdminInAdmins) {
         return next();
       }
@@ -142,7 +142,7 @@ async function requireStaff(req, res, next) {
       }
     } else {
       // Local fallback mode
-      const isAdminInAdmins = ['owner@gmail.com', 'canteenadmin@gmail.com', 'admin@lmcst.ac.in'].includes(email);
+      const isAdminInAdmins = ['owner@gmail.com', 'canteenadmin@gmail.com', 'admin@lmcst.ac.in', 'sooryadev.s.y@gmail.com'].includes(email);
       if (isAdminInAdmins) {
         return next();
       }
@@ -173,7 +173,7 @@ app.post('/api/auth/google-signin', async (req, res) => {
     }
 
     // Verify token using Firebase Admin SDK
-    const adminAuth = admin.auth();
+    const adminAuth = getAuth();
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const { email, name, picture } = decodedToken;
 
@@ -184,11 +184,12 @@ app.post('/api/auth/google-signin', async (req, res) => {
     const lastLogin = new Date().toISOString();
 
     if (role === 'student') {
-      // Allow only authorized college email domains (e.g., @lmcst.ac.in)
-      if (!email.endsWith('@lmcst.ac.in')) {
+      // Only allow the following Google accounts for Student access
+      const allowedStudents = ['lemmefind45@gmail.com', 'dranzer4545@gmail.com'];
+      if (!allowedStudents.includes(email)) {
         return res.status(403).json({ 
           success: false, 
-          error: `Unauthorized: Student access restricted to authorized college domain (@lmcst.ac.in)` 
+          error: "This Google account is not authorized for Student access." 
         });
       }
 
@@ -217,12 +218,12 @@ app.post('/api/auth/google-signin', async (req, res) => {
       return res.json({ success: true, message: 'Google Authentication successful', user: userDetails });
 
     } else if (role === 'admin') {
-      // Only users whose email exists in the admins collection can access the Admin Dashboard
-      const adminDoc = await firestoreDb.collection('admins').doc(email).get();
-      if (!adminDoc.exists) {
+      // Only allow the following Google account for Admin access
+      const allowedAdmins = ['sooryadev.s.y@gmail.com'];
+      if (!allowedAdmins.includes(email)) {
         return res.status(403).json({ 
           success: false, 
-          error: `Access Denied: Email "${email}" is not an approved Admin account.` 
+          error: "This Google account is not authorized for Admin access." 
         });
       }
 
