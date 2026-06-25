@@ -255,6 +255,32 @@
             document.getElementById('staff-name').textContent = loggedInUser.name;
         }
 
+        // Helper to retrieve auth headers dynamically
+        async function getAuthHeaders() {
+            let email = loggedInUser ? loggedInUser.email : '';
+            let role = loggedInUser ? loggedInUser.role : '';
+
+            // Check Firebase Auth if initialized
+            try {
+                const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+                const auth = getAuth();
+                if (auth.currentUser) {
+                    email = auth.currentUser.email || email;
+                    if (!role) {
+                        role = email.includes('admin') || email === 'sooryadev.s.y@gmail.com' ? 'admin' : 'kitchen';
+                    }
+                }
+            } catch (e) {
+                // Firebase Auth not initialized or not loaded yet
+            }
+
+            return {
+                'Content-Type': 'application/json',
+                'X-User-Email': email,
+                'X-User-Role': role
+            };
+        }
+
         // Live Clock
         function updateClock() {
             const now = new Date();
@@ -405,12 +431,10 @@
         // Change Status Endpoint Call
         async function updateOrderStatus(orderId, newStatus) {
             try {
+                const authHeaders = await getAuthHeaders();
                 const res = await fetch(`/api/orders/${orderId}`, {
                     method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-User-Email': loggedInUser ? loggedInUser.email : ''
-                    },
+                    headers: authHeaders,
                     body: JSON.stringify({ status: newStatus })
                 });
                 
@@ -549,9 +573,10 @@
                     }
 
                     // Call API to complete order (Handed Over status) with QR payload validation
+                    const authHeaders = await getAuthHeaders();
                     const res = await fetch(`/api/orders/${data.orderId}`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: authHeaders,
                         body: JSON.stringify({ 
                             status: 'Handed Over',
                             qrPayload: data

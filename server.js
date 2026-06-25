@@ -73,11 +73,17 @@ async function seedAdmins() {
   }
 }
 
-// Middleware to require Admin access (checks X-User-Email header)
+// Middleware to require Admin access (checks X-User-Email header or session)
 async function requireAdmin(req, res, next) {
-  const email = req.headers['x-user-email'];
+  const email = req.headers['x-user-email'] || (req.session && (req.session.email || (req.session.user && req.session.user.email)));
+  const role = req.headers['x-user-role'] || (req.session && (req.session.role || (req.session.user && req.session.user.role)));
+
   if (!email) {
     return res.status(401).json({ error: "Unauthorized: Missing X-User-Email header" });
+  }
+
+  if (role === 'student') {
+    return res.status(403).json({ error: "Forbidden: Student users are restricted from accessing this endpoint" });
   }
 
   try {
@@ -116,11 +122,17 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-// Middleware to require Staff (Kitchen/Chef or Admin) access (checks X-User-Email header)
+// Middleware to require Staff (Kitchen/Chef or Admin) access (checks X-User-Email header or session)
 async function requireStaff(req, res, next) {
-  const email = req.headers['x-user-email'];
+  const email = req.headers['x-user-email'] || (req.session && (req.session.email || (req.session.user && req.session.user.email)));
+  const role = req.headers['x-user-role'] || (req.session && (req.session.role || (req.session.user && req.session.user.role)));
+
   if (!email) {
     return res.status(401).json({ error: "Unauthorized: Missing X-User-Email header" });
+  }
+
+  if (role === 'student') {
+    return res.status(403).json({ error: "Forbidden: Student users are restricted from accessing this endpoint" });
   }
 
   try {
